@@ -1,26 +1,26 @@
-import yaml
+import json
 
 from simputils.config.generic import BasicFileHandler
 from simputils.config.models import ConfigStore
 
 
-class YamlFileHandler(BasicFileHandler):
+class JsonFileHandler(BasicFileHandler):
 
-	CONFIG_TYPE: str = "YAML"
+	CONFIG_TYPE: str = "JSON"
 
 	def process_file(self, file: str) -> ConfigStore | None:
-		# NOTE  For some weird reason PyYAML parsing json successfully.
-		#       It is unreasonable architecturally, so JSONs are explicitly excluded
-
 		conf = self._prepare_conf(file)
 		if conf is not None:
 
 			# noinspection PyBroadException
 			try:
 				with open(file, "r") as fd:
-					return conf.config_apply(
-						yaml.safe_load(fd),
-					)
+					data = json.load(fd)
+					if not isinstance(data, dict):
+						# MARK  Overlapping error and try/catch that should not catch this error
+						raise Exception("JSON file format root element must be dict")
+
+					return conf.config_apply(data)
 			except:
 				pass
 

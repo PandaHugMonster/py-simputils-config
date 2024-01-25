@@ -1,28 +1,5 @@
 import re
-from typing import Callable, Any
-
-from simputils.config.components import ConfigHub
-from simputils.config.generic import BasicConfigStore
-
-
-def config_from_dict(
-	config: dict | BasicConfigStore,
-	name: str = None,
-	source: str = None,
-	type: str = None,
-	target: BasicConfigStore = None
-) -> BasicConfigStore:
-	return ConfigHub.config_from_dict(config, name, source, type, target)
-
-
-def config_from_file(
-	file: str,
-	name: str = None,
-	source: str = None,
-	type: str = None,
-	target: BasicConfigStore = None
-) -> BasicConfigStore:
-	return ConfigHub.config_from_file(file, name, source, type, target)
+from typing import Any
 
 
 def simputils_pp(k: str, v: Any, replace_pattern=r"[^0-9a-zA-Z]+", replaced_with="_"):

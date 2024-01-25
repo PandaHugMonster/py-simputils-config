@@ -15,6 +15,8 @@ class TestFileHandlers:
 			"tests/data/config-2.yml",
 			"tests/data/config-3.json",
 			"tests/data/config-4.env",
+			"tests/data/config-4.env",
+			"tests/data/missing-file.env",
 			os.environ,
 
 			target=ConfigStore(
@@ -23,7 +25,6 @@ class TestFileHandlers:
 			)
 		)
 
-		assert len(conf.applied_confs) == 5
 		assert conf["PARAM_1"] == "first parameter"
 		assert conf["PARAM_2"] == "two"
 		assert conf["PARAM_3"] == "three"

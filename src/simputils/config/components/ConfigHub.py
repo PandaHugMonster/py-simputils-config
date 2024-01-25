@@ -15,7 +15,11 @@ class ConfigHub:
 	]
 
 	@classmethod
-	def aggregate(cls, *args: PathLike | str | ConfigStore | dict, target: ConfigStore = None) -> ConfigStore:
+	def aggregate(
+		cls,
+		*args: PathLike | str | ConfigStore | dict,
+		target: ConfigStore = None
+	) -> ConfigStore:
 		if target is None:  # pragma: no cover
 			target = ConfigStore()
 		for arg in args:
@@ -66,8 +70,9 @@ class ConfigHub:
 
 				break
 
-		if not is_handled:
-			print(handler, sub_res)
-			raise Exception(f"No handler for {file} is found")
+		# TODO  Add missing files and unhandled files exception (with possibility to enable/disable)
+		# if not is_handled:
+		# 	print(handler, sub_res)
+		# 	raise Exception(f"No handler for {file} is found")
 
 		return target

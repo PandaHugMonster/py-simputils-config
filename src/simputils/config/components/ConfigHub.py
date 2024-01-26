@@ -69,14 +69,18 @@ class ConfigHub:
 		name: str = None,
 		source: str = None,
 		type: str = None,
-		target: ConfigStore = None
+		target: ConfigStore = None,
+		handler: BasicFileHandler = None
 	):
-		if not cls.file_handlers:
+		available_handlers = cls.file_handlers
+		if handler:
+			available_handlers = [handler, ]
+		if not available_handlers:
 			raise NoFileHandlersSpecified("No file handlers specified")
 
 		is_handled = False
-		for handler in cls.file_handlers:
-			sub_res: ConfigStore | None = handler.process_file(file)
+		for h in available_handlers:
+			sub_res: ConfigStore | None = h.process_file(file)
 			if sub_res is not None:
 				is_handled = True
 				if target is None:

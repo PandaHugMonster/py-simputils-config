@@ -22,7 +22,13 @@ class DotEnvFileHandler(BasicFileHandler):
 					data = dotenv.dotenv_values(stream=file)
 				else:
 					data = dotenv.dotenv_values(file)
-				return conf.config_apply(data)
+				return conf.config_apply(
+					dict(data),
+					name=conf.name,
+					source=conf.source,
+					type=conf.type,
+					handler=self,
+				)
 			except:  # pragma: no cover
 				pass
 

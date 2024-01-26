@@ -24,10 +24,18 @@ class YamlFileHandler(BasicFileHandler):
 				if isinstance(file, IOBase):
 					return conf.config_apply(
 						yaml.safe_load(file),
+						name=conf.name,
+						source=conf.source,
+						type=conf.type,
+						handler=self,
 					)
 				with open(file, "r") as fd:
 					return conf.config_apply(
 						yaml.safe_load(fd),
+						name=conf.name,
+						source=conf.source,
+						type=conf.type,
+						handler=self,
 					)
 			except:
 				pass

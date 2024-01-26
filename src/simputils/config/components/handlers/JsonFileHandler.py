@@ -19,7 +19,7 @@ class JsonFileHandler(BasicFileHandler):
 			# noinspection PyBroadException
 			try:
 				if isinstance(file, IOBase):
-					data = json.load(file)
+					data = json.loads(file.read())
 					if not isinstance(data, dict):
 						# MARK  Overlapping error and try/catch that should not catch this error
 						raise WrongFormat("JSON file format root element must be dict")
@@ -30,8 +30,14 @@ class JsonFileHandler(BasicFileHandler):
 							# MARK  Overlapping error and try/catch that should not catch this error
 							raise WrongFormat("JSON file format root element must be dict")
 
-					return conf.config_apply(data)
-			except:
+				return conf.config_apply(
+					dict(data),
+					name=conf.name,
+					source=conf.source,
+					type=conf.type,
+					handler=self,
+				)
+			except Exception as e:
 				pass
 
 		return None

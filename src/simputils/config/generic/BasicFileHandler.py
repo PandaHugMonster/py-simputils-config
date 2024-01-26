@@ -3,6 +3,7 @@ from io import IOBase
 from os import PathLike
 from os.path import exists, basename, realpath
 
+from simputils.config.enums import ConfigStoreType
 from simputils.config.models import ConfigStore
 
 
@@ -18,12 +19,20 @@ class BasicFileHandler(metaclass=ABCMeta):
 		return (self.CONFIG_TYPE,)
 
 	def _prepare_conf(self, file):
-		if not file or not exists(file):  # pragma: no cover
-			return None
+		if isinstance(file, IOBase):
+			name = "StringIO"
+			source = file
+			type = ConfigStoreType.IO.value
+		else:
+			if not file or not exists(file):  # pragma: no cover
+				return None
+			name = basename(file)
+			source = realpath(file)
+			type = self.CONFIG_TYPE
 
 		return ConfigStore(
-			name=basename(file),
-			source=realpath(file),
-			type=self.CONFIG_TYPE,
+			name=name,
+			source=source,
+			type=type,
 			handler=self,
 		)

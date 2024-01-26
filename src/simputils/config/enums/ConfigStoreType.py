@@ -6,3 +6,4 @@ class ConfigStoreType(str, Enum):
 	DOT_ENV = "DotEnv"
 	JSON = "JSON"
 	ENV_VARS = "EnvVars"
+	IO = "IO"

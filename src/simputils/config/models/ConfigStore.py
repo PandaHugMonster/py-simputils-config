@@ -12,7 +12,7 @@ class ConfigStore(dict):
 	_type: str = None
 	_applied_confs: list = None
 	_storage: dict = None
-	_preprocessor: "Callable[[Any, ], tuple[Any, Any]]" = None
+	_preprocessor: "dict | Callable[[Any, ], tuple[Any, Any]]" = None
 	_filter: list | Callable = None
 	_handler=None
 
@@ -55,13 +55,17 @@ class ConfigStore(dict):
 		self._filter = filter
 		self._handler = handler
 
-		if not self._preprocessor:
-			self._preprocessor = lambda k, v: (k, v)
-
 		if not self._type:
 			self._type = self.__class__.__name__
 
 		self.config_apply(values, name, source, type)
+
+	def _key_replace_callback(self, mapped_keys: dict, key: str, val: Any):
+		if key in mapped_keys:
+			# NOTE  Replacing old key with a new key
+			return mapped_keys[key], val
+		# NOTE  Returning key and val intact
+		return key, val
 
 	def config_apply(
 		self,
@@ -86,10 +90,17 @@ class ConfigStore(dict):
 		if type is None:
 			type = "dict"
 
+		preprocessor = self._preprocessor
+
+		if preprocessor:
+			if isinstance(preprocessor, dict):
+				# MARK  Maybe refactor this to avoid using lambda due to performance limitations
+				_preprocessor_data = preprocessor
+				preprocessor = lambda k, v: self._key_replace_callback(_preprocessor_data, k, v)
+
 		applied_keys = []
 		for key, val in config.items():
-			if self._preprocessor:
-				preprocessor = self._preprocessor
+			if preprocessor is not None:
 				key, val = preprocessor(key, val)
 			if self._filter:
 				filter = self._filter
@@ -97,6 +108,7 @@ class ConfigStore(dict):
 					applied_keys.append(key)
 					self._storage[key] = val
 			else:
+				applied_keys.append(key)
 				self._storage[key] = val
 
 		self._applied_confs.append(AppliedConf(

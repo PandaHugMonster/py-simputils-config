@@ -1,12 +1,13 @@
 import yaml
 
+from simputils.config.enums import ConfigStoreType
 from simputils.config.generic import BasicFileHandler
 from simputils.config.models import ConfigStore
 
 
 class YamlFileHandler(BasicFileHandler):
 
-	CONFIG_TYPE: str = "YAML"
+	CONFIG_TYPE: str = ConfigStoreType.YAML
 
 	def process_file(self, file: str) -> ConfigStore | None:
 		# NOTE  For some weird reason PyYAML parsing json successfully.

@@ -1,12 +1,13 @@
 import json
 
+from simputils.config.enums import ConfigStoreType
 from simputils.config.generic import BasicFileHandler
 from simputils.config.models import ConfigStore
 
 
 class JsonFileHandler(BasicFileHandler):
 
-	CONFIG_TYPE: str = "JSON"
+	CONFIG_TYPE: str = ConfigStoreType.JSON
 
 	def process_file(self, file: str) -> ConfigStore | None:
 		conf = self._prepare_conf(file)

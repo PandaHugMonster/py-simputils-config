@@ -41,7 +41,7 @@ class TestFileHandlers:
 		assert conf.applied_from("PARAM_3").type == YamlFileHandler.CONFIG_TYPE
 		assert conf.applied_from("PARAM_3").name == "config-2.yml"
 
-		print(conf.applied_from("PARAM_4"))
+		# print(conf.applied_from("PARAM_4"))
 		assert conf.applied_from("PARAM_4").type == DotEnvFileHandler.CONFIG_TYPE
 		assert conf.applied_from("PARAM_4").name == "config-4.env"
 
@@ -53,5 +53,5 @@ class TestFileHandlers:
 
 		assert conf.applied_from("Hello World") is None
 
-		print(conf)
+		# print(conf)
 

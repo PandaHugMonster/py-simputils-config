@@ -1,6 +1,7 @@
 from os import PathLike, _Environ
 
 from simputils.config.components.handlers import YamlFileHandler, JsonFileHandler, DotEnvFileHandler
+from simputils.config.enums import ConfigStoreType
 from simputils.config.generic.BasicFileHandler import BasicFileHandler
 from simputils.config.models import ConfigStore
 
@@ -25,7 +26,14 @@ class ConfigHub:
 		for arg in args:
 			if isinstance(arg, (PathLike, str)):
 				target += cls.config_from_file(arg)
-			elif isinstance(arg, (ConfigStore, dict, _Environ)):
+			elif isinstance(arg, _Environ):
+				target += cls.config_from_dict(
+					arg,
+					name="environ",
+					source="os",
+					type=ConfigStoreType.ENV_VARS,
+				)
+			elif isinstance(arg, (ConfigStore, dict)):
 				target += cls.config_from_dict(arg)
 			else:
 				# MARK  Proper exception type needed!
@@ -42,7 +50,11 @@ class ConfigHub:
 		target: ConfigStore = None
 	):
 		if target is None:  # pragma: no cover
-			target = ConfigStore()
+			target = ConfigStore(
+				name=name,
+				source=source,
+				type=type,
+			)
 		return target.config_apply(config, name, source, type)
 
 	@classmethod

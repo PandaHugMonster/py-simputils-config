@@ -1,12 +1,13 @@
 import dotenv
 
+from simputils.config.enums import ConfigStoreType
 from simputils.config.generic import BasicFileHandler
 from simputils.config.models import ConfigStore
 
 
 class DotEnvFileHandler(BasicFileHandler):
 
-	CONFIG_TYPE: str = "DotEnv"
+	CONFIG_TYPE: str = ConfigStoreType.DOT_ENV
 
 	def process_file(self, file: str) -> ConfigStore | None:
 		conf = self._prepare_conf(file)

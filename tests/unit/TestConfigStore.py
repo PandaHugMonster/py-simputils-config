@@ -54,7 +54,7 @@ class TestConfigStore:
 
 		applied_conf_ref = conf.applied_confs[2]
 		assert isinstance(applied_conf_ref, AppliedConf)
-		assert applied_conf_ref.applied_keys == []
+		assert applied_conf_ref.applied_keys == ["test-inherit-value-1", "test-init-value-2", "test-inherit-value-2"]
 		assert applied_conf_ref.type == "ConfigStore"
 		assert OrderedDict(sorted(applied_conf_ref.ref.items())) == OrderedDict(sorted({
 			"test-inherit-value-1": "val inherit 1",
@@ -97,3 +97,12 @@ class TestConfigStore:
 
 		assert bool(conf), "Check if ConfigStore object is true when non-empty"
 
+	def test_documentation_examples(self):
+		conf = ConfigStore(
+			{"VAL1": "My Val 1", "VAL2": True},
+			name="My very special config",
+			type="MY-type",
+			source="knowhere",
+		)
+		first_applied: AppliedConf = conf.applied_confs[0]
+		assert first_applied.applied_keys == ["VAL1", "VAL2"]

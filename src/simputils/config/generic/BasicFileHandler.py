@@ -17,7 +17,6 @@ class BasicFileHandler(metaclass=ABCMeta):
 
 	def _prepare_conf(self, file):
 		if not file or not exists(file):  # pragma: no cover
-			print("File does not exist")
 			return None
 
 		return ConfigStore(

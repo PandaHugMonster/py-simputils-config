@@ -31,7 +31,7 @@ but it still allows to apply sets directly from the code.
 ----
 
 When working with files, keep in mind that the only supported files are `.yml`, `.env` and `.json`.
-If you need support for other types, you will have to implement you custom handler for those file-types.
+If you need support for other types, you will have to implement your custom handler for those file-types.
 
 ## Documentation
 * [The overall example](docs/overall-example.md)

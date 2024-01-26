@@ -1,0 +1,4 @@
+
+
+class NoFileHandlersSpecified(Exception):
+	pass

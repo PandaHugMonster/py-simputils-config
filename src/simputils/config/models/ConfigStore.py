@@ -15,26 +15,31 @@ class ConfigStore(dict):
 	_preprocessor: "dict | Callable[[Any, ], tuple[Any, Any]]" = None
 	_filter: list | Callable = None
 	_handler=None
+	_return_default_on_none: bool = True
 
 	@property
-	def name(self):
+	def name(self) -> str:
 		return self._name
 
 	@property
-	def source(self):
+	def source(self) -> str:
 		return self._source
 
 	@property
-	def type(self):
+	def type(self) -> str:
 		return self._type
 
 	@property
-	def handler(self):
+	def handler(self) -> Callable:
 		return self._handler
 
 	@property
-	def applied_confs(self):
+	def applied_confs(self) -> list:
 		return self._applied_confs
+
+	@property
+	def return_default_on_none(self) -> bool:  # pragma: no cover
+		return self._return_default_on_none
 
 	def __init__(
 		self,
@@ -44,7 +49,8 @@ class ConfigStore(dict):
 		type: str = None,
 		preprocessor: Callable = None,
 		filter: list | Callable = None,
-		handler=None
+		handler=None,
+		return_default_on_none: bool = True,
 	):
 		self._applied_confs = []
 		self._storage = {}
@@ -54,6 +60,7 @@ class ConfigStore(dict):
 		self._preprocessor = preprocessor
 		self._filter = filter
 		self._handler = handler
+		self._return_default_on_none = return_default_on_none
 
 		if not self._type:
 			self._type = self.__class__.__name__
@@ -156,6 +163,16 @@ class ConfigStore(dict):
 
 	def __delitem__(self, key):  # pragma: no cover
 		del self._storage[key]
+
+	def get(self, key, default: Any = None):
+		res = self._storage.get(key)
+		if self._return_default_on_none:
+			if res is None:
+				return default
+		else:
+			if key not in self:
+				return default
+		return res
 
 	def clear(self):  # pragma: no cover
 		# TODO  Add logging that it's not allowed

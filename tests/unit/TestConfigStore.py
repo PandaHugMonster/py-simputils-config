@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+from simputils.config.components import ConfigHub
 from simputils.config.models import ConfigStore, AppliedConf
 
 
@@ -106,3 +107,44 @@ class TestConfigStore:
 		)
 		first_applied: AppliedConf = conf.applied_confs[0]
 		assert first_applied.applied_keys == ["VAL1", "VAL2"]
+
+	def test_getting_with_defaults(self):
+
+		conf = ConfigStore({"v1": 1, "v2": 2, "v3": None})
+
+		assert conf.get("v1", "default") == 1
+		assert conf.get("v2", "default") == 2
+		assert conf.get("v3", "default") == "default"
+		assert conf.get("v4", "default") == "default"
+
+		conf = ConfigStore({"v1": 1, "v2": 2, "v3": None}, return_default_on_none=True)
+
+		assert conf.get("v1", "default") == 1
+		assert conf.get("v2", "default") == 2
+		assert conf.get("v3", "default") == "default"
+		assert conf.get("v4", "default") == "default"
+
+		conf = ConfigStore({"v1": 1, "v2": 2, "v3": None}, return_default_on_none=False)
+
+		assert conf.get("v1", "default") == 1
+		assert conf.get("v2", "default") == 2
+		assert conf.get("v3", "default") is None
+		assert conf.get("v4", "default") == "default"
+
+	def test_keys_replace(self):
+		conf = ConfigStore(
+			{"v1": 1, "v2": 2, "v3": None},
+			preprocessor={"v1": "VAL1", "v3": "VAL3"}
+		)
+
+		assert "v1" not in conf
+		assert "v3" not in conf
+		assert "VAL1" in conf
+		assert conf["VAL1"] == 1
+		assert conf["VAL3"] is None
+
+	def test_aggregate_dict(self):
+		conf = ConfigHub.aggregate({"test1": "test1", "test2": "test2"})
+
+		assert conf["test1"] == "test1"
+		assert conf["test2"] == "test2"

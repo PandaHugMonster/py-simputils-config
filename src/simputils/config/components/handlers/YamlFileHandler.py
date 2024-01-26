@@ -1,3 +1,6 @@
+from io import IOBase
+from os import PathLike
+
 import yaml
 
 from simputils.config.enums import ConfigStoreType
@@ -9,7 +12,7 @@ class YamlFileHandler(BasicFileHandler):
 
 	CONFIG_TYPE: str = ConfigStoreType.YAML
 
-	def process_file(self, file: str) -> ConfigStore | None:
+	def process_file(self, file: PathLike | str | IOBase) -> ConfigStore | None:
 		# NOTE  For some weird reason PyYAML parsing json successfully.
 		#       It is unreasonable architecturally, so JSONs are explicitly excluded
 
@@ -18,6 +21,10 @@ class YamlFileHandler(BasicFileHandler):
 
 			# noinspection PyBroadException
 			try:
+				if isinstance(file, IOBase):
+					return conf.config_apply(
+						yaml.safe_load(file),
+					)
 				with open(file, "r") as fd:
 					return conf.config_apply(
 						yaml.safe_load(fd),

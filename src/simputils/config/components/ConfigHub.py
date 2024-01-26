@@ -1,7 +1,10 @@
+from io import IOBase
+# noinspection PyUnresolvedReferences,PyProtectedMember
 from os import PathLike, _Environ
 
 from simputils.config.components.handlers import YamlFileHandler, JsonFileHandler, DotEnvFileHandler
 from simputils.config.enums import ConfigStoreType
+from simputils.config.exceptions import NoFileHandlersSpecified
 from simputils.config.generic.BasicFileHandler import BasicFileHandler
 from simputils.config.models import ConfigStore
 
@@ -18,13 +21,13 @@ class ConfigHub:
 	@classmethod
 	def aggregate(
 		cls,
-		*args: PathLike | str | ConfigStore | dict,
+		*args: PathLike | str | ConfigStore | dict | IOBase,
 		target: ConfigStore = None
 	) -> ConfigStore:
 		if target is None:  # pragma: no cover
 			target = ConfigStore()
 		for arg in args:
-			if isinstance(arg, (PathLike, str)):
+			if isinstance(arg, (PathLike, str, IOBase)):
 				target += cls.config_from_file(arg)
 			elif isinstance(arg, _Environ):
 				target += cls.config_from_dict(
@@ -37,7 +40,9 @@ class ConfigHub:
 				target += cls.config_from_dict(arg)
 			else:
 				# MARK  Proper exception type needed!
-				raise Exception("Not supported operand type")
+				raise TypeError(
+					f"unsupported operand type(s) for +: '{PathLike | str | ConfigStore | dict}' and '{type(arg).__name__}'"
+				)
 		return target
 
 	@classmethod
@@ -60,15 +65,14 @@ class ConfigHub:
 	@classmethod
 	def config_from_file(
 		cls,
-		file: str,
+		file: PathLike | str | IOBase,
 		name: str = None,
 		source: str = None,
 		type: str = None,
 		target: ConfigStore = None
 	):
 		if not cls.file_handlers:
-			# MARK  Add proper exception type
-			raise Exception("No file handlers specified")
+			raise NoFileHandlersSpecified("No file handlers specified")
 
 		is_handled = False
 		for handler in cls.file_handlers:

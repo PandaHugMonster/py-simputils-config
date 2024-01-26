@@ -87,3 +87,13 @@ class TestConfigStore:
 		assert conf["FILTERED_IN_1"] == "FILTERED_IN_1"
 		assert conf["FILTERED_IN_3"] == "FILTERED_IN_3"
 		assert conf["FILTERED_IN_2"] is None
+
+	def test_explicit_checks(self):
+		conf = ConfigStore()
+
+		assert not bool(conf), "Check if ConfigStore object is false when empty"
+
+		conf["test-val"] = 11
+
+		assert bool(conf), "Check if ConfigStore object is true when non-empty"
+

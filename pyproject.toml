@@ -1,0 +1,25 @@
+[project]
+name = "simputils-config"
+version = "0.1.0"
+#dynamic = ["version"]
+authors = [
+  { name="Ivan Ponomarev", email="i.ponomarev@pandev.tech" },
+]
+description = "Simple Configs Manager"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+  "pyyaml", "python-magic", "python-dotenv"
+]
+license = {file = "LICENSE"}
+keywords = ["simputils", "config", "files", "utils", "framework", "simple"]
+
+
+[project.urls]
+Homepage = "https://github.com/PandaHugMonster/py-simputils-config"
+Issues = "https://github.com/PandaHugMonster/py-simputils-config/issues"

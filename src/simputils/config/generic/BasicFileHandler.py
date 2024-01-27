@@ -20,19 +20,19 @@ class BasicFileHandler(metaclass=ABCMeta):
 
 	def _prepare_conf(self, file):
 		if isinstance(file, IOBase):
-			name = "StringIO"
+			name = type(file).__name__
 			source = file
-			type = ConfigStoreType.IO.value
+			_type = ConfigStoreType.IO.value
 		else:
 			if not file or not exists(file):  # pragma: no cover
 				return None
 			name = basename(file)
 			source = realpath(file)
-			type = self.CONFIG_TYPE
+			_type = self.CONFIG_TYPE
 
 		return ConfigStore(
 			name=name,
 			source=source,
-			type=type,
+			type=_type,
 			handler=self,
 		)

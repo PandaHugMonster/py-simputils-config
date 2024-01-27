@@ -1,7 +1,6 @@
 [project]
 name = "simputils-config"
-version = "0.1.0"
-#dynamic = ["version"]
+dynamic = ["version"]
 authors = [
   { name="Ivan Ponomarev", email="i.ponomarev@pandev.tech" },
 ]
@@ -20,6 +19,15 @@ dependencies = [
 ]
 license = {file = "LICENSE"}
 keywords = ["simputils", "config", "files", "utils", "framework", "simple"]
+
+[build-system]
+requires = [
+    "setuptools>=64",
+    "setuptools_scm>=8"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
 
 [project.optional-dependencies]
 dev = [

@@ -2,6 +2,8 @@ import inspect
 from typing import Any
 from typing import Callable
 
+from simputils.config.enums import ConfigStoreType
+from simputils.config.exceptions import NotPermitted
 from simputils.config.models import AppliedConf
 
 
@@ -39,6 +41,16 @@ class ConfigStore(dict):
 
 	@property
 	def return_default_on_none(self) -> bool:  # pragma: no cover
+		"""
+		If set to True and `get()` method is used with `default` param supplied,
+		then `default` value will be returned on "non-existing" and "None" values
+
+		If set to False and `get()` method is used with `default` param supplied,
+		then `default` value will be returned ONLY on "non-existing", but None values will not be affected
+
+		Empty values are not affected by this setting, and considered as a solid value
+		:return:
+		"""
 		return self._return_default_on_none
 
 	def __init__(
@@ -68,6 +80,14 @@ class ConfigStore(dict):
 		self.config_apply(values, name, source, type)
 
 	def _key_replace_callback(self, mapped_keys: dict, key: str, val: Any):
+		"""
+		Callback for replacing old key with a new key where `mapped_keys` is {"OLD KEY": "NEW KEY"}
+
+		:param mapped_keys:
+		:param key:
+		:param val:
+		:return:
+		"""
 		if key in mapped_keys:
 			# NOTE  Replacing old key with a new key
 			return mapped_keys[key], val
@@ -75,6 +95,12 @@ class ConfigStore(dict):
 		return key, val
 
 	def _preprocess_filter_and_apply(self, config):
+		"""
+		Running preprocessing, filtering and applying final values
+
+		:param config:
+		:return:
+		"""
 		preprocessor = self._preprocessor
 
 		if preprocessor:
@@ -110,6 +136,18 @@ class ConfigStore(dict):
 		type: str = None,
 		handler=None,
 	):
+		"""
+		Setting values to the object that could be accessed dict-like style
+
+		Alternatives for this are `update()` method and `+` operator
+
+		:param config:
+		:param name:
+		:param source:
+		:param type:
+		:param handler:
+		:return:
+		"""
 		if not config:  # pragma: no cover
 			return self
 		if isinstance(config, ConfigStore):
@@ -123,7 +161,7 @@ class ConfigStore(dict):
 				handler = config.handler
 
 		if type is None:
-			type = "dict"
+			type = ConfigStoreType.DICT
 
 		applied_keys = self._preprocess_filter_and_apply(config)
 
@@ -145,10 +183,17 @@ class ConfigStore(dict):
 			{key: value},
 			f"{frame_info.function}:{frame_info.lineno}",
 			frame_info.filename,
-			"single-value"
+			ConfigStoreType.SINGLE_VALUE
 		)
 
 	def applied_from(self, key: str, include_unprocessed_keys: bool = False) -> dict:
+		"""
+		Returns the latest `AppliedConf` which affected `key` value
+
+		:param key:
+		:param include_unprocessed_keys:
+		:return:
+		"""
 		for record in reversed(self._applied_confs):
 			record: AppliedConf
 			if key in record.applied_keys:
@@ -174,6 +219,13 @@ class ConfigStore(dict):
 		del self._storage[key]
 
 	def get(self, key, default: Any = None):
+		"""
+		Equivalent of `conf["my-key"]` but you can specify default if the key is not found
+
+		:param key:
+		:param default:
+		:return:
+		"""
 		res = self._storage.get(key)
 		if self._return_default_on_none:
 			if res is None:
@@ -184,8 +236,7 @@ class ConfigStore(dict):
 		return res
 
 	def clear(self):  # pragma: no cover
-		# TODO  Add logging that it's not allowed
-		pass
+		raise NotPermitted("Clearing of ConfigStore is not permitted due to architecture")
 
 	def copy(self):  # pragma: no cover
 		return self._storage.copy()
@@ -203,12 +254,10 @@ class ConfigStore(dict):
 		return self._storage.items()
 
 	def pop(self, __key):  # pragma: no cover
-		# TODO  Add logging that it's not allowed
-		pass
+		raise NotPermitted("Popping from ConfigStore is not permitted due to architecture")
 
 	def popitem(self):  # pragma: no cover
-		# TODO  Add logging that it's not allowed
-		pass
+		raise NotPermitted("Popping from ConfigStore is not permitted due to architecture")
 
 	def __cmp__(self, other):  # pragma: no cover
 		return self._storage == other

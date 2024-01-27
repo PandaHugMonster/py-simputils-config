@@ -10,6 +10,9 @@ from simputils.config.models import ConfigStore
 
 
 class YamlFileHandler(BasicFileHandler):
+	"""
+	Handles YAML files/io and creates `ConfigStore` from them
+	"""
 
 	CONFIG_TYPE: str = ConfigStoreType.YAML
 
@@ -20,8 +23,6 @@ class YamlFileHandler(BasicFileHandler):
 		conf = self._prepare_conf(file)
 		if conf is not None:
 
-			# noinspection PyBroadException
-			# try:
 			if isinstance(file, IOBase):
 				return conf.config_apply(
 					yaml.safe_load(file),
@@ -39,7 +40,5 @@ class YamlFileHandler(BasicFileHandler):
 						type=conf.type,
 						handler=self,
 					)
-			# except Exception:
-			# 	pass
 
 		return None

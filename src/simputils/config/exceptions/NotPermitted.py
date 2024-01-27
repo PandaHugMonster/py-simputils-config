@@ -1,0 +1,4 @@
+
+
+class NotPermitted(Exception):
+	pass

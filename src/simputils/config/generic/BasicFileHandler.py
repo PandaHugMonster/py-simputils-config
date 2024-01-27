@@ -8,6 +8,11 @@ from simputils.config.models import ConfigStore
 
 
 class BasicFileHandler(metaclass=ABCMeta):
+	"""
+	The main ancestor of all file-handlers
+
+	If you want to implement your custom handler, please inherit from this one
+	"""
 
 	CONFIG_TYPE: str = "abstract"
 

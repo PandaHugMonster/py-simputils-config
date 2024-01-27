@@ -10,6 +10,9 @@ from simputils.config.models import ConfigStore
 
 
 class JsonFileHandler(BasicFileHandler):
+	"""
+	Handles JSON files/io and creates `ConfigStore` from them
+	"""
 
 	CONFIG_TYPE: str = ConfigStoreType.JSON
 

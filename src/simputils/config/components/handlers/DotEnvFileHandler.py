@@ -10,6 +10,9 @@ from simputils.config.models import ConfigStore
 
 
 class DotEnvFileHandler(BasicFileHandler):
+	"""
+	Handles DotEnv files/io and creates `ConfigStore` from them
+	"""
 
 	CONFIG_TYPE: str = ConfigStoreType.DOT_ENV
 

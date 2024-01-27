@@ -10,6 +10,11 @@ from simputils.config.models import ConfigStore
 
 
 class ConfigHub:
+	"""
+	Static Helper to operate with `ConfigStore`s
+
+	Allows to aggregate from multiple object types and sources like dict, file, StringIO, etc.
+	"""
 
 	file_handlers: list[BasicFileHandler] = [
 		# NOTE  Order matters!
@@ -25,6 +30,16 @@ class ConfigHub:
 		*args: PathLike | str | ConfigStore | dict | IOBase,
 		target: ConfigStore = None
 	) -> ConfigStore:
+		"""
+		Aggregate configs from multiple sources.
+
+		Just list file paths, dict, etc. and it will aggregate values from all of those
+		sources to a single config
+
+		:param args:
+		:param target:
+		:return:
+		"""
 		if target is None:  # pragma: no cover
 			target = ConfigStore()
 		for arg in args:
@@ -55,6 +70,16 @@ class ConfigHub:
 		type: str = None,
 		target: ConfigStore = None
 	):
+		"""
+		Just an alias for `ConfigStore`
+
+		:param config:
+		:param name:
+		:param source:
+		:param type:
+		:param target:
+		:return:
+		"""
 		if target is None:  # pragma: no cover
 			target = ConfigStore(
 				name=name,
@@ -73,6 +98,20 @@ class ConfigHub:
 		target: ConfigStore = None,
 		handler: BasicFileHandler = None
 	):
+		"""
+		Creates `ConfigStore` from a file path, fd, StringIO, etc.
+
+		Keep in mind that for fd or any BaseIO value, you most likely will need to specify
+		explicitly `handler` param with an object of your handler.
+
+		:param file:
+		:param name:
+		:param source:
+		:param type:
+		:param target:
+		:param handler:
+		:return:
+		"""
 		available_handlers = cls.file_handlers
 		if handler:
 			available_handlers = [handler, ]

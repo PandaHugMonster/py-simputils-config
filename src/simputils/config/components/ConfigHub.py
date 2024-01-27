@@ -123,6 +123,7 @@ class ConfigHub:
 			sub_res: ConfigStore | None = h.process_file(file)
 			if sub_res is not None:
 				is_handled = True
+
 				if target is None:
 					target = sub_res
 				else:  # pragma: no cover

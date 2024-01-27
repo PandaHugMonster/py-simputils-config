@@ -1,7 +1,10 @@
+from io import StringIO
+
 import pytest
 
 from simputils.config.components import ConfigHub
-from simputils.config.exceptions import NoAvailableHandlers
+from simputils.config.components.handlers import JsonFileHandler
+from simputils.config.exceptions import NoAvailableHandlers, WrongFormat, NoHandler
 
 
 @pytest.mark.order(-1)
@@ -13,7 +16,7 @@ class TestExceptions:
 
 		assert exc_i.match(r".*unsupported operand type.*")
 
-	def test_no_file_handlers_specified(self):
+	def test_no_available_handlers(self):
 		orig_file_handlers = ConfigHub.file_handlers
 		ConfigHub.file_handlers = []
 
@@ -24,13 +27,19 @@ class TestExceptions:
 
 		ConfigHub.file_handlers = orig_file_handlers
 
-	# def test_wrong_format(self):
-	#   TODO    Too complicated right now, add later
-	# 	ConfigHub.file_handlers = []
-	#
-	# 	with pytest.raises(WrongFormat) as exc_i:
-	# 		io_str = StringIO("//////asdasd")
-	# 		ConfigHub.aggregate(io_str)
-	#
-	# 	assert exc_i.errisinstance(WrongFormat)
+	def test_no_handler(self):
+		ConfigHub.skip_files_with_missing_handler = False
+		with pytest.raises(NoHandler) as exc_i:
+			ConfigHub.aggregate("test.text")
+		assert exc_i.errisinstance(NoHandler)
+
+		ConfigHub.skip_files_with_missing_handler = True
+		ConfigHub.aggregate("test.text")
+
+	def test_wrong_format(self):
+		with pytest.raises(WrongFormat) as exc_i:
+			io_str = StringIO('["test", 2, true, null]')
+			ConfigHub.config_from_file(io_str, handler=JsonFileHandler())
+
+		assert exc_i.errisinstance(WrongFormat)
 

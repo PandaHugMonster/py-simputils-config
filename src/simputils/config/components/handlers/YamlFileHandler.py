@@ -1,3 +1,4 @@
+import os
 from io import IOBase
 from os import PathLike
 
@@ -20,15 +21,16 @@ class YamlFileHandler(BasicFileHandler):
 		if conf is not None:
 
 			# noinspection PyBroadException
-			try:
-				if isinstance(file, IOBase):
-					return conf.config_apply(
-						yaml.safe_load(file),
-						name=conf.name,
-						source=conf.source,
-						type=conf.type,
-						handler=self,
-					)
+			# try:
+			if isinstance(file, IOBase):
+				return conf.config_apply(
+					yaml.safe_load(file),
+					name=conf.name,
+					source=conf.source,
+					type=conf.type,
+					handler=self,
+				)
+			elif os.path.splitext(file)[1] in (".yml", ".yaml"):
 				with open(file, "r") as fd:
 					return conf.config_apply(
 						yaml.safe_load(fd),
@@ -37,7 +39,7 @@ class YamlFileHandler(BasicFileHandler):
 						type=conf.type,
 						handler=self,
 					)
-			except Exception:
-				pass
+			# except Exception:
+			# 	pass
 
 		return None

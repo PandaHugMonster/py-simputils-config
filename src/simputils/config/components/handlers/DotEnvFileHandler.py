@@ -1,3 +1,4 @@
+import os
 from io import IOBase
 from os import PathLike
 
@@ -17,11 +18,9 @@ class DotEnvFileHandler(BasicFileHandler):
 		if conf is not None:
 
 			# noinspection PyBroadException
-			try:
-				if isinstance(file, IOBase):
-					data = dotenv.dotenv_values(stream=file)
-				else:
-					data = dotenv.dotenv_values(file)
+			# try:
+			if isinstance(file, IOBase):
+				data = dotenv.dotenv_values(stream=file)
 				return conf.config_apply(
 					dict(data),
 					name=conf.name,
@@ -29,7 +28,16 @@ class DotEnvFileHandler(BasicFileHandler):
 					type=conf.type,
 					handler=self,
 				)
-			except Exception:  # pragma: no cover
-				pass
+			elif os.path.splitext(file)[1] in (".env",):
+				data = dotenv.dotenv_values(file)
+				return conf.config_apply(
+					dict(data),
+					name=conf.name,
+					source=conf.source,
+					type=conf.type,
+					handler=self,
+				)
+			# except Exception:  # pragma: no cover
+			# 	pass
 
 		return None  # pragma: no cover

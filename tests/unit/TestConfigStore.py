@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+from simputils.config.base import simputils_pp
 from simputils.config.components import ConfigHub
 from simputils.config.models import ConfigStore, AppliedConf
 
@@ -148,3 +149,26 @@ class TestConfigStore:
 
 		assert conf["test1"] == "test1"
 		assert conf["test2"] == "test2"
+
+	def test_dict_keys_for_filter(self):
+		defaults = {
+			"key-1": "val 1",
+			"key-2": "val 2",
+			"key-3": "val 3",
+		}
+
+		conf = ConfigHub.aggregate(
+			defaults,
+			{"key-2": "new val 2", "test": "test"},
+			target=ConfigStore(
+				preprocessor=simputils_pp,
+				filter=defaults.keys(),
+			)
+		)
+
+		assert len(conf) == 3
+		assert conf["KEY_1"] == "val 1"
+		assert conf["KEY_2"] == "new val 2"
+		assert conf["KEY_3"] == "val 3"
+		assert not conf["TEST"]
+

@@ -1,0 +1,4 @@
+
+
+class NoHandler(Exception):
+	pass

@@ -8,6 +8,9 @@ from simputils.config.models import AppliedConf
 
 
 class ConfigStore(dict):
+	"""
+	Major object containing the config itself
+	"""
 
 	_name: str = None
 	_source: str = None

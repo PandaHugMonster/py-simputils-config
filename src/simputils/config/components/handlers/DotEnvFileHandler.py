@@ -29,7 +29,7 @@ class DotEnvFileHandler(BasicFileHandler):
 					type=conf.type,
 					handler=self,
 				)
-			except:  # pragma: no cover
+			except Exception:  # pragma: no cover
 				pass
 
 		return None  # pragma: no cover

@@ -14,7 +14,7 @@ class ConfigStore(dict):
 	_storage: dict = None
 	_preprocessor: "dict | Callable[[Any, ], tuple[Any, Any]]" = None
 	_filter: list | Callable = None
-	_handler=None
+	_handler = None
 	_return_default_on_none: bool = True
 
 	@property
@@ -74,6 +74,34 @@ class ConfigStore(dict):
 		# NOTE  Returning key and val intact
 		return key, val
 
+	def _preprocess_filter_and_apply(self, config):
+		preprocessor = self._preprocessor
+
+		if preprocessor:
+			if isinstance(preprocessor, dict):
+				# MARK  Maybe refactor this to avoid using lambda due to performance limitations
+				_preprocessor_data = preprocessor
+
+				def _wrapper(k, v):
+					return self._key_replace_callback(_preprocessor_data, k, v)
+
+				preprocessor = _wrapper
+
+		applied_keys = []
+		for key, val in config.items():
+			if preprocessor is not None:
+				key, val = preprocessor(key, val)
+			if self._filter:
+				filter = self._filter
+				if (isinstance(filter, (list, tuple)) and (key in filter)) or (callable(filter) and filter(key, val)):
+					applied_keys.append(key)
+					self._storage[key] = val
+			else:
+				applied_keys.append(key)
+				self._storage[key] = val
+
+		return applied_keys
+
 	def config_apply(
 		self,
 		config: "dict | ConfigStore",
@@ -97,26 +125,7 @@ class ConfigStore(dict):
 		if type is None:
 			type = "dict"
 
-		preprocessor = self._preprocessor
-
-		if preprocessor:
-			if isinstance(preprocessor, dict):
-				# MARK  Maybe refactor this to avoid using lambda due to performance limitations
-				_preprocessor_data = preprocessor
-				preprocessor = lambda k, v: self._key_replace_callback(_preprocessor_data, k, v)
-
-		applied_keys = []
-		for key, val in config.items():
-			if preprocessor is not None:
-				key, val = preprocessor(key, val)
-			if self._filter:
-				filter = self._filter
-				if (isinstance(filter, (list, tuple)) and (key in filter)) or (callable(filter) and filter(key, val)):
-					applied_keys.append(key)
-					self._storage[key] = val
-			else:
-				applied_keys.append(key)
-				self._storage[key] = val
+		applied_keys = self._preprocess_filter_and_apply(config)
 
 		self._applied_confs.append(AppliedConf(
 			applied_keys=applied_keys,

@@ -1,7 +1,7 @@
 import pytest
 
 from simputils.config.components import ConfigHub
-from simputils.config.exceptions import NoFileHandlersSpecified
+from simputils.config.exceptions import NoAvailableHandlers
 
 
 @pytest.mark.order(-1)
@@ -17,10 +17,10 @@ class TestExceptions:
 		orig_file_handlers = ConfigHub.file_handlers
 		ConfigHub.file_handlers = []
 
-		with pytest.raises(NoFileHandlersSpecified) as exc_i:
+		with pytest.raises(NoAvailableHandlers) as exc_i:
 			ConfigHub.aggregate("test.text")
 
-		assert exc_i.errisinstance(NoFileHandlersSpecified)
+		assert exc_i.errisinstance(NoAvailableHandlers)
 
 		ConfigHub.file_handlers = orig_file_handlers
 

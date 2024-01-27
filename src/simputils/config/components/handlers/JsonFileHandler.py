@@ -37,7 +37,7 @@ class JsonFileHandler(BasicFileHandler):
 					type=conf.type,
 					handler=self,
 				)
-			except Exception as e:
+			except Exception:
 				pass
 
 		return None

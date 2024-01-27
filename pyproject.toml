@@ -14,11 +14,19 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-  "pyyaml", "python-magic", "python-dotenv"
+    "pyyaml",
+    "python-magic",
+    "python-dotenv"
 ]
 license = {file = "LICENSE"}
 keywords = ["simputils", "config", "files", "utils", "framework", "simple"]
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "flake8"
+]
 
 [project.urls]
 Homepage = "https://github.com/PandaHugMonster/py-simputils-config"

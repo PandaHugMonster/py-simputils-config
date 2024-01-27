@@ -4,7 +4,7 @@ from os import PathLike, _Environ
 
 from simputils.config.components.handlers import YamlFileHandler, JsonFileHandler, DotEnvFileHandler
 from simputils.config.enums import ConfigStoreType
-from simputils.config.exceptions import NoFileHandlersSpecified
+from simputils.config.exceptions import NoAvailableHandlers, NoHandler
 from simputils.config.generic.BasicFileHandler import BasicFileHandler
 from simputils.config.models import ConfigStore
 
@@ -17,6 +17,7 @@ class ConfigHub:
 		YamlFileHandler(),
 		DotEnvFileHandler(),
 	]
+	skip_files_with_missing_handler: bool = True
 
 	@classmethod
 	def aggregate(
@@ -76,7 +77,7 @@ class ConfigHub:
 		if handler:
 			available_handlers = [handler, ]
 		if not available_handlers:
-			raise NoFileHandlersSpecified("No file handlers specified")
+			raise NoAvailableHandlers("No file handlers specified")
 
 		is_handled = False
 		for h in available_handlers:
@@ -90,9 +91,7 @@ class ConfigHub:
 
 				break
 
-		# TODO  Add missing files and unhandled files exception (with possibility to enable/disable)
-		# if not is_handled:
-		# 	print(handler, sub_res)
-		# 	raise Exception(f"No handler for {file} is found")
+		if not cls.skip_files_with_missing_handler and not is_handled:
+			raise NoHandler(f"No handler for {file} is found")
 
 		return target

@@ -37,7 +37,7 @@ class YamlFileHandler(BasicFileHandler):
 						type=conf.type,
 						handler=self,
 					)
-			except:
+			except Exception:
 				pass
 
 		return None

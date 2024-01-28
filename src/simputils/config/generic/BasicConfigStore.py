@@ -32,7 +32,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 	@classmethod
 	@abstractmethod
-	def applied_conf_class(cls):
+	def applied_conf_class(cls):  # pragma: no cover
 		pass
 
 	@property
@@ -180,7 +180,11 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 	def _prepare_filter(self, filter: FilterType, preprocessor: Callable):
 		_filter = filter
-		if isinstance(filter, Iterable):
+		if isinstance(filter, Iterable) or filter is True:
+
+			# NOTE  In case if filter is set to True
+			_filter = self._initial_preprocessed_keys if _filter is True else _filter
+
 			def _wrapper(key: str, val: Any):
 				key, _ = preprocessor(key, val)
 				if not _filter:
@@ -190,7 +194,9 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 					if filter_key == key:
 						return True
 				return False
+
 			filter = _wrapper
+
 		elif not callable(filter):
 			def _wrapper(key: str, val: Any):
 				return True

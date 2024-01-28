@@ -39,16 +39,87 @@ If you need support for other types, you will have to implement your custom hand
 
 ## Generic examples
 
+### Enums as default config with filter
+
+```python
+import os
+from typing import Annotated
+
+from simputils.config.base import simputils_pp
+from simputils.config.components import ConfigHub
+from simputils.config.generic import BasicConfigEnum
+from simputils.config.models import ConfigStore, AnnotatedConfigData
+
+
+class MyEnum(BasicConfigEnum):
+
+    # Annotated without and with default values set
+    MY_E_KEY_1: Annotated[str, AnnotatedConfigData()] = "my-e-key-1"
+
+    MY_E_KEY_2: Annotated[str, AnnotatedConfigData(
+        default=3.1415
+    )] = "my-e-key-2"
+
+    # Non-annotated, so they will be None by default
+    MY_E_KEY_3 = "my-e-key-3"
+    MY_E_KEY_4 = "my-e-key-4"
+    MY_E_KEY_5 = "my-e-key-5"
+
+    # Some of them used in `app-conf.yml`
+    MY_FIRST_VAL = "val-1"
+    MY_SECOND_VAL = "VAL_2"
+
+    # Will be taken from os.environ,
+    # all other os.environ values will be excluded
+    ENV_USER_NAME = "USER"
+
+
+conf = ConfigHub.aggregate(
+    "tests/data/config-1.yml",
+
+    os.environ,
+
+    target=ConfigStore(
+        MyEnum.defaults(),
+        preprocessor=simputils_pp,
+        filter=True
+    ),
+)
+
+print("conf: ", conf)
+```
+
+```text
+conf:  {
+    'MY_E_KEY_1': None, 
+    'MY_E_KEY_2': 3.1415, 
+    'MY_E_KEY_3': None, 
+    'MY_E_KEY_4': None, 
+    'MY_E_KEY_5': None, 
+    'VAL_1': 'My conf value 1', 
+    'VAL_2': 'My conf value 2', 
+    'USER': 'ivan'
+}
+```
+
 ### Enums and argparser support
 `Enum` keys are supported out of the box, and `argparser.Namespace` could be used for `ConfigStore`
 
+> [!NOTE]
+> `BasicConfigEnum` is used for convenience. 
+> And it's suggested way, it allows to use `True` as a filter key
+> 
+> You still can use Enums without that class, 
+> just make sure that enum is inherited from `str, Enum` in that order! 
+
 ```python
 from argparse import ArgumentParser
-from enum import Enum
 
 from simputils.config.base import simputils_pp
 from simputils.config.components import ConfigHub
 from simputils.config.models import ConfigStore
+from simputils.config.generic import BasicConfigEnum
+
 
 args_parser = ArgumentParser()
 args_parser.add_argument("--name", "-n", default="PandaHugMonster")
@@ -56,27 +127,23 @@ args_parser.add_argument("--age", default="33")
 
 args = args_parser.parse_args(["--name", "Oldie", "--age", "34"])
 
-class MyEnum(str, Enum):
-    MY_1 = "key-1"
-    MY_2 = "key-2"
-    MY_3 = "key-3"
 
-    NAME = "name"
-    AGE = "age"
+class MyEnum(BasicConfigEnum):
+	MY_1 = "key-1"
+	MY_2 = "key-2"
+	MY_3 = "key-3"
 
-defaults = {
-    MyEnum.MY_1: "val 1",
-    MyEnum.MY_2: "val 2",
-}
+	NAME = "name"
+	AGE = "age"
 
 c = ConfigHub.aggregate(
-    defaults,
-    {MyEnum.MY_2: "new val 2", "test": "test"},
-    args,
-    target=ConfigStore(
-        preprocessor=simputils_pp,
-        filter=defaults.keys(),
-    )
+	{MyEnum.MY_2: "new val 2", "test": "test"},
+	args,
+	target=ConfigStore(
+        MyEnum.defaults(),
+		preprocessor=simputils_pp,
+		filter=True
+	)
 )
 ```
 

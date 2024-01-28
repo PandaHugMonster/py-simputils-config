@@ -1,12 +1,11 @@
-from io import IOBase
-# noinspection PyUnresolvedReferences,PyProtectedMember
-from os import PathLike, _Environ
+from argparse import Namespace
+from os import _Environ
 
 from simputils.config.components.handlers import YamlFileHandler, JsonFileHandler, DotEnvFileHandler
 from simputils.config.enums import ConfigStoreType
 from simputils.config.exceptions import NoAvailableHandlers, NoHandler
-from simputils.config.generic.BasicFileHandler import BasicFileHandler
 from simputils.config.models import ConfigStore
+from simputils.config.types import HandlerType, ConfigType, FileType, SourceType
 
 
 class ConfigHub:
@@ -16,7 +15,7 @@ class ConfigHub:
 	Allows to aggregate from multiple object types and sources like dict, file, StringIO, etc.
 	"""
 
-	file_handlers: list[BasicFileHandler] = [
+	file_handlers: list[HandlerType] = [
 		# NOTE  Order matters!
 		JsonFileHandler(),
 		YamlFileHandler(),
@@ -27,7 +26,7 @@ class ConfigHub:
 	@classmethod
 	def aggregate(
 		cls,
-		*args: PathLike | str | ConfigStore | dict | IOBase,
+		*args: ConfigType | FileType,
 		target: ConfigStore = None
 	) -> ConfigStore:
 		"""
@@ -43,7 +42,7 @@ class ConfigHub:
 		if target is None:  # pragma: no cover
 			target = ConfigStore()
 		for arg in args:
-			if isinstance(arg, (PathLike, str, IOBase)):
+			if isinstance(arg, FileType):
 				target += cls.config_from_file(arg)
 			elif isinstance(arg, _Environ):
 				target += cls.config_from_dict(
@@ -54,19 +53,26 @@ class ConfigHub:
 				)
 			elif isinstance(arg, (ConfigStore, dict)):
 				target += cls.config_from_dict(arg)
+			elif isinstance(arg, Namespace):
+				target += cls.config_from_dict(
+					arg,
+					name="args",
+					source=arg,
+					type=ConfigStoreType.ARGPARSER_NAMESPACE,
+				)
 			else:
 				# MARK  Proper exception type needed!
 				raise TypeError(
-					f"unsupported operand type(s) for +: '{PathLike | str | ConfigStore | dict}' and '{type(arg).__name__}'"
+					f"unsupported operand type(s) for +: '{ConfigType | FileType}' and '{type(arg).__name__}'"
 				)
 		return target
 
 	@classmethod
 	def config_from_dict(
 		cls,
-		config: dict,
+		config: ConfigType,
 		name: str = None,
-		source: str = None,
+		source: SourceType = None,
 		type: str = None,
 		target: ConfigStore = None
 	):
@@ -91,12 +97,12 @@ class ConfigHub:
 	@classmethod
 	def config_from_file(
 		cls,
-		file: PathLike | str | IOBase,
+		file: FileType,
 		name: str = None,
-		source: str = None,
+		source: SourceType = None,
 		type: str = None,
 		target: ConfigStore = None,
-		handler: BasicFileHandler = None
+		handler: HandlerType = None
 	):
 		"""
 		Creates `ConfigStore` from a file path, fd, StringIO, etc.

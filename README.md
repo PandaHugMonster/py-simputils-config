@@ -39,6 +39,47 @@ If you need support for other types, you will have to implement your custom hand
 
 ## Generic examples
 
+### Enums and argparser support
+`Enum` keys are supported out of the box, and `argparser.Namespace` could be used for `ConfigStore`
+
+```python
+from argparse import ArgumentParser
+from enum import Enum
+
+from simputils.config.base import simputils_pp
+from simputils.config.components import ConfigHub
+from simputils.config.models import ConfigStore
+
+args_parser = ArgumentParser()
+args_parser.add_argument("--name", "-n", default="PandaHugMonster")
+args_parser.add_argument("--age", default="33")
+
+args = args_parser.parse_args(["--name", "Oldie", "--age", "34"])
+
+class MyEnum(str, Enum):
+    MY_1 = "key-1"
+    MY_2 = "key-2"
+    MY_3 = "key-3"
+
+    NAME = "name"
+    AGE = "age"
+
+defaults = {
+    MyEnum.MY_1: "val 1",
+    MyEnum.MY_2: "val 2",
+}
+
+c = ConfigHub.aggregate(
+    defaults,
+    {MyEnum.MY_2: "new val 2", "test": "test"},
+    args,
+    target=ConfigStore(
+        preprocessor=simputils_pp,
+        filter=defaults.keys(),
+    )
+)
+```
+
 ### Simple Config and EnvVars
 
 ```python

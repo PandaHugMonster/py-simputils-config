@@ -1,4 +1,5 @@
 import inspect
+from collections.abc import Iterable
 from typing import Any
 from typing import Callable
 
@@ -97,6 +98,18 @@ class ConfigStore(dict):
 		# NOTE  Returning key and val intact
 		return key, val
 
+	def _process_iterable(self, preprocessor, filter, key, val):
+		applied_keys = []
+		if isinstance(filter, Iterable):
+			for filter_key in filter:
+				if preprocessor is not None:
+					filter_key, _ = preprocessor(filter_key, None)
+				if filter_key == key:
+					applied_keys.append(key)
+					self._storage[key] = val
+					break
+		return applied_keys
+
 	def _preprocess_filter_and_apply(self, config):
 		"""
 		Running preprocessing, filtering and applying final values
@@ -122,7 +135,12 @@ class ConfigStore(dict):
 				key, val = preprocessor(key, val)
 			if self._filter:
 				filter = self._filter
-				if (isinstance(filter, (list, tuple)) and (key in filter)) or (callable(filter) and filter(key, val)):
+
+				applied_keys.extend(
+					self._process_iterable(preprocessor, filter, key, val)
+				)
+
+				if callable(filter) and filter(key, val):
 					applied_keys.append(key)
 					self._storage[key] = val
 			else:

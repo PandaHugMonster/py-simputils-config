@@ -1,3 +1,4 @@
+from enum import Enum
 from io import StringIO
 
 import pytest
@@ -5,6 +6,7 @@ import pytest
 from simputils.config.components import ConfigHub
 from simputils.config.components.handlers import JsonFileHandler
 from simputils.config.exceptions import NoAvailableHandlers, WrongFormat, NoHandler
+from simputils.config.models import ConfigStore
 
 
 @pytest.mark.order(-1)
@@ -13,8 +15,11 @@ class TestExceptions:
 	def test_plus_unsupported_type(self):
 		with pytest.raises(TypeError) as exc_i:
 			ConfigHub.aggregate(33)
+		assert exc_i.match(r".*Unsupported data-type.*")
 
-		assert exc_i.match(r".*unsupported operand type.*")
+		with pytest.raises(TypeError) as exc_i:
+			ConfigStore(Enum)
+		assert exc_i.match(r".*Unsupported data-type.*")
 
 	def test_no_available_handlers(self):
 		orig_file_handlers = ConfigHub.file_handlers

@@ -1,10 +1,9 @@
 from abc import ABCMeta, abstractmethod
 from io import IOBase
-from os import PathLike
 from os.path import exists, basename, realpath
 
 from simputils.config.enums import ConfigStoreType
-from simputils.config.models import ConfigStore
+from simputils.config.types import FileType
 
 
 class BasicFileHandler(metaclass=ABCMeta):
@@ -17,13 +16,15 @@ class BasicFileHandler(metaclass=ABCMeta):
 	CONFIG_TYPE: str = "abstract"
 
 	@abstractmethod
-	def process_file(self, file: PathLike | str | IOBase):  # pragma: no cover
+	def process_file(self, file: FileType):  # pragma: no cover
 		pass
 
 	def supported_types(self) -> tuple:  # pragma: no cover
 		return (self.CONFIG_TYPE,)
 
-	def _prepare_conf(self, file):
+	def _prepare_conf(self, file: FileType):
+		from simputils.config.models import ConfigStore
+
 		if isinstance(file, IOBase):
 			name = type(file).__name__
 			source = file
@@ -41,3 +42,6 @@ class BasicFileHandler(metaclass=ABCMeta):
 			type=_type,
 			handler=self,
 		)
+
+	def __call__(self, file: FileType):
+		return self.process_file(file)

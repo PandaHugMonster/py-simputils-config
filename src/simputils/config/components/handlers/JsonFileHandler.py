@@ -1,12 +1,12 @@
 import json
 import os
 from io import IOBase
-from os import PathLike
 
 from simputils.config.enums import ConfigStoreType
 from simputils.config.exceptions import WrongFormat
 from simputils.config.generic import BasicFileHandler
 from simputils.config.models import ConfigStore
+from simputils.config.types import FileType
 
 
 class JsonFileHandler(BasicFileHandler):
@@ -16,7 +16,7 @@ class JsonFileHandler(BasicFileHandler):
 
 	CONFIG_TYPE: str = ConfigStoreType.JSON
 
-	def _prepare_from_io(self, file, conf):
+	def _prepare_from_io(self, file: IOBase, conf: ConfigStore):
 		data = json.load(file)
 		if not isinstance(data, dict):
 			# MARK  Overlapping error and try/catch that should not catch this error
@@ -29,7 +29,7 @@ class JsonFileHandler(BasicFileHandler):
 			handler=self,
 		)
 
-	def process_file(self, file: PathLike | str | IOBase) -> ConfigStore | None:
+	def process_file(self, file: FileType) -> ConfigStore | None:
 		conf = self._prepare_conf(file)
 		if conf is not None:
 			if isinstance(file, IOBase):

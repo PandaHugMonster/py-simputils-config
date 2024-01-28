@@ -1,8 +1,13 @@
+from argparse import ArgumentParser
 from collections import OrderedDict
+from enum import Enum
+from typing import Annotated
 
 from simputils.config.base import simputils_pp
 from simputils.config.components import ConfigHub
-from simputils.config.models import ConfigStore, AppliedConf
+from simputils.config.enums import ConfigStoreType
+from simputils.config.generic import BasicConfigEnum
+from simputils.config.models import ConfigStore, AppliedConf, AnnotatedConfigData
 
 
 class TestConfigStore:
@@ -57,7 +62,7 @@ class TestConfigStore:
 		applied_conf_ref = conf.applied_confs[2]
 		assert isinstance(applied_conf_ref, AppliedConf)
 		assert applied_conf_ref.applied_keys == ["test-inherit-value-1", "test-init-value-2", "test-inherit-value-2"]
-		assert applied_conf_ref.type == "ConfigStore"
+		assert applied_conf_ref.type == ConfigStoreType.DICT
 		assert OrderedDict(sorted(applied_conf_ref.ref.items())) == OrderedDict(sorted({
 			"test-inherit-value-1": "val inherit 1",
 			"test-init-value-2": "replacing value",
@@ -172,3 +177,170 @@ class TestConfigStore:
 		assert conf["KEY_3"] == "val 3"
 		assert not conf["TEST"]
 
+	def test_enum_proper_support(self):
+		class MyEnum(str, Enum):
+			MY_1 = "key-1"
+			MY_2 = "key-2"
+			MY_3 = "key-3"
+
+		defaults = {
+			MyEnum.MY_1: "val 1",
+			MyEnum.MY_2: "val 2",
+			# MyEnum.MY_3: "val 3",
+		}
+
+		conf = ConfigHub.aggregate(
+			defaults,
+			{MyEnum.MY_2: "new val 2", "test": "test"},
+			target=ConfigStore(
+				preprocessor=simputils_pp,
+				filter=defaults.keys(),
+			)
+		)
+
+		conf[MyEnum.MY_3] = "EQ"
+
+		assert conf["KEY_1"]
+		assert conf["KEY_1"] == "val 1"
+
+		assert conf[MyEnum.MY_1]
+		assert conf[MyEnum.MY_1] == "val 1"
+
+		assert conf.get("KEY_1")
+		assert conf.get("KEY_1") == "val 1"
+
+		assert conf.get(MyEnum.MY_1)
+		assert conf.get(MyEnum.MY_1) == "val 1"
+
+		#
+
+		assert conf["KEY_2"]
+		assert conf["KEY_2"] == "new val 2"
+
+		assert conf[MyEnum.MY_2]
+		assert conf[MyEnum.MY_2] == "new val 2"
+
+		assert conf.get("KEY_2")
+		assert conf.get("KEY_2") == "new val 2"
+
+		assert conf.get(MyEnum.MY_2)
+		assert conf.get(MyEnum.MY_2) == "new val 2"
+
+	def test_arg_parser_namespace(self):
+		args_parser = ArgumentParser()
+		args_parser.add_argument("--name", "-n", default="MyName")
+		args_parser.add_argument("--age", default="33")
+
+		args = args_parser.parse_args(["-n", "PandaHugMonster"])
+
+		conf = ConfigHub.aggregate(
+			args,
+			target=ConfigStore(
+				preprocessor=simputils_pp,
+			)
+		)
+
+		assert conf["NAME"] == "PandaHugMonster"
+		assert int(conf["AGE"]) == 33
+
+	def test_annotated_config_data(self):
+		class MyEnum(BasicConfigEnum):
+			MY_E_KEY_1 = "my-e-key-1"
+
+			MY_E_KEY_2: Annotated[str, AnnotatedConfigData(
+				default=3.1415
+			)] = "my-e-key-2"
+
+			MY_E_KEY_3 = "my-e-key-3"
+			MY_E_KEY_4: Annotated[str, AnnotatedConfigData(
+				default="GOO GOO"
+			)] = "my-e-key-4"
+			MY_E_KEY_5 = "my-e-key-5"
+
+		conf = ConfigHub.aggregate(
+			{"MY_E_KEY_1": "gg", "TEST_1": "another val ", "test 2": "test", "my-e-key-4": "TOOT TOOT"},
+			target=ConfigStore(
+				MyEnum.defaults(),
+				preprocessor=simputils_pp,
+				filter=True
+			),
+		)
+
+		assert conf[MyEnum.MY_E_KEY_1] == "gg"
+		assert conf[MyEnum.MY_E_KEY_2] == 3.1415
+		assert conf[MyEnum.MY_E_KEY_3] is None
+		assert conf[MyEnum.MY_E_KEY_4] == "TOOT TOOT"
+
+		conf = ConfigHub.aggregate(
+			{"MY_E_KEY_1": "gg", "TEST_1": "another val ", "test 2": "test", "my-e-key-4": "TOOT TOOT"},
+			target=ConfigStore(
+				MyEnum.defaults(),
+				preprocessor=simputils_pp,
+				filter=[]
+			),
+		)
+
+		assert conf
+
+		conf = ConfigHub.aggregate(
+			{"MY_E_KEY_1": "gg", "TEST_1": "another val ", "test 2": "test", "my-e-key-4": "TOOT TOOT"},
+			target=ConfigStore(
+				MyEnum.defaults(),
+				preprocessor=simputils_pp,
+				filter=False
+			),
+		)
+
+		assert conf
+
+	def test_enum_default_filter_out_unknown(self):
+		class MyEnum(BasicConfigEnum):
+			MY_E_KEY_1 = "my-e-key-1"
+
+			MY_E_KEY_2: Annotated[str, AnnotatedConfigData(
+				default=3.1415
+			)] = "my-e-key-2"
+
+			MY_E_KEY_3 = "my-e-key-3"
+			MY_E_KEY_4 = "my-e-key-4"
+			MY_E_KEY_5 = "my-e-key-5"
+
+			# Some of them used in `app-conf.yml`
+			MY_FIRST_VAL = "val-1"
+			MY_SECOND_VAL = "VAL_2"
+
+		conf = ConfigHub.aggregate(
+			"tests/data/config-1.yml",
+
+			target=ConfigStore(
+				MyEnum.defaults(),
+				preprocessor=simputils_pp,
+				filter=MyEnum.defaults().keys()
+			),
+		)
+
+		assert conf
+		assert conf["MY_E_KEY_1"] is None
+		assert conf["MY_E_KEY_2"] == 3.1415
+		assert conf["VAL_1"] == "My conf value 1"
+		assert conf["VAL_2"] == "My conf value 2"
+		assert conf["VAL_3"] is None
+		assert conf["PARAM_1"] is None
+
+		conf = ConfigHub.aggregate(
+			"tests/data/config-1.yml",
+
+			target=ConfigStore(
+				MyEnum.defaults(),
+				preprocessor=simputils_pp,
+				filter=True
+			),
+		)
+
+		assert conf
+		assert conf["MY_E_KEY_1"] is None
+		assert conf["MY_E_KEY_2"] == 3.1415
+		assert conf["VAL_1"] == "My conf value 1"
+		assert conf["VAL_2"] == "My conf value 2"
+		assert conf["VAL_3"] is None
+		assert conf["PARAM_1"] is None

@@ -1,16 +1,9 @@
-from dataclasses import dataclass
-from typing import Any
+from simputils.config.generic import BasicAppliedConf
 
 
-@dataclass
-class AppliedConf:
+class AppliedConf(BasicAppliedConf):
 	"""
 	ConfigStore's history record
 	"""
 
-	applied_keys: list = None
-	type: str = None
-	name: str = None
-	source: str = None
-	handler: Any = None
-	ref: dict = None
+	pass

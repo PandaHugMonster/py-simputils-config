@@ -4,3 +4,7 @@ param-3: 0.9
 param-4: true
 param-5: null
 param-6: [1, 2, 3]
+
+val-1: "My conf value 1"
+val-2: "My conf value 2"
+val-3: "My conf value 3"

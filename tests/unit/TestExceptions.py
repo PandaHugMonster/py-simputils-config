@@ -14,7 +14,7 @@ class TestExceptions:
 		with pytest.raises(TypeError) as exc_i:
 			ConfigHub.aggregate(33)
 
-		assert exc_i.match(r".*unsupported operand type.*")
+		assert exc_i.match(r".*Unsupported data-type.*")
 
 	def test_no_available_handlers(self):
 		orig_file_handlers = ConfigHub.file_handlers

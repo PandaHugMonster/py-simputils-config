@@ -5,6 +5,7 @@ from typing import Annotated
 
 from simputils.config.base import simputils_pp
 from simputils.config.components import ConfigHub
+from simputils.config.enums import ConfigStoreType
 from simputils.config.generic import BasicConfigEnum
 from simputils.config.models import ConfigStore, AppliedConf, AnnotatedConfigData
 
@@ -61,7 +62,7 @@ class TestConfigStore:
 		applied_conf_ref = conf.applied_confs[2]
 		assert isinstance(applied_conf_ref, AppliedConf)
 		assert applied_conf_ref.applied_keys == ["test-inherit-value-1", "test-init-value-2", "test-inherit-value-2"]
-		assert applied_conf_ref.type == "ConfigStore"
+		assert applied_conf_ref.type == ConfigStoreType.DICT
 		assert OrderedDict(sorted(applied_conf_ref.ref.items())) == OrderedDict(sorted({
 			"test-inherit-value-1": "val inherit 1",
 			"test-init-value-2": "replacing value",
@@ -251,11 +252,13 @@ class TestConfigStore:
 			)] = "my-e-key-2"
 
 			MY_E_KEY_3 = "my-e-key-3"
-			MY_E_KEY_4 = "my-e-key-4"
+			MY_E_KEY_4: Annotated[str, AnnotatedConfigData(
+				default="GOO GOO"
+			)] = "my-e-key-4"
 			MY_E_KEY_5 = "my-e-key-5"
 
 		conf = ConfigHub.aggregate(
-			{"MY_E_KEY_1": "gg", "TEST_1": "another val ", "test 2": "test"},
+			{"MY_E_KEY_1": "gg", "TEST_1": "another val ", "test 2": "test", "my-e-key-4": "TOOT TOOT"},
 			target=ConfigStore(
 				MyEnum.defaults(),
 				preprocessor=simputils_pp,
@@ -263,7 +266,7 @@ class TestConfigStore:
 			),
 		)
 
-		print("conf: ", conf, conf.applied_confs)
-
-		assert conf[MyEnum.MY_E_KEY_1] == "g"
-
+		assert conf[MyEnum.MY_E_KEY_1] == "gg"
+		assert conf[MyEnum.MY_E_KEY_2] == 3.1415
+		assert conf[MyEnum.MY_E_KEY_3] is None
+		assert conf[MyEnum.MY_E_KEY_4] == "TOOT TOOT"

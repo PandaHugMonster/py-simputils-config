@@ -21,7 +21,7 @@ class BasicConfigEnum(str, Enum):
 				try:
 					_, annotated_config_data = get_args(d)
 					default = annotated_config_data.data.get("default")
-				except ValueError:
+				except ValueError:  # pragma: no cover
 					pass
 			res[m.value] = default
 

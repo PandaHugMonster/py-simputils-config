@@ -3,7 +3,8 @@ from abc import ABCMeta, abstractmethod
 from argparse import Namespace
 from collections.abc import Iterable
 from enum import Enum
-from typing import Any
+from os import _Environ
+from typing import Any, Callable
 
 from typing_extensions import Self
 
@@ -15,6 +16,7 @@ from simputils.config.types import ConfigType, PreProcessorType, FilterType, Sou
 
 class BasicConfigStore(dict, metaclass=ABCMeta):
 
+	_return_default_on_none: bool = True
 	_name: str = None
 	_source: SourceType = None
 	_type: str = None
@@ -22,8 +24,11 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 	_storage: dict = None
 	_preprocessor: PreProcessorType = None
 	_filter: FilterType = None
-	_handler = None
-	_return_default_on_none: bool = True
+	_applied_conf_class = None
+	_initial_preprocessed_keys: list[str] = None
+
+	_handler: HandlerType = None
+	"""Handler is just a reference, it is not being called from within ConfigStore"""
 
 	@classmethod
 	@abstractmethod
@@ -31,19 +36,20 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		pass
 
 	@property
-	def name(self) -> str:
+	def name(self) -> str | None:
 		return self._name
 
 	@property
-	def source(self) -> SourceType:
+	def source(self) -> SourceType | None:
 		return self._source
 
 	@property
-	def type(self) -> str:
+	def type(self) -> str | None:
 		return self._type
 
 	@property
-	def handler(self) -> HandlerType:
+	def handler(self) -> HandlerType | None:
+		"""Handler is just a reference, it is not being called from within ConfigStore"""
 		return self._handler
 
 	@property
@@ -77,18 +83,66 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 	):
 		self._applied_confs = []
 		self._storage = {}
-		self._type = type
-		self._source = source
-		self._name = name
-		self._preprocessor = preprocessor
-		self._filter = filter
-		self._handler = handler
+		self._initial_preprocessed_keys = []
 		self._return_default_on_none = return_default_on_none
+		self._applied_conf_class = self.applied_conf_class()
 
-		if not self._type:
-			self._type = self.__class__.__name__
+		values, self._name, self._source, self._type, self._handler = self._prepare_supported_types(
+			values,
+			name,
+			source,
+			type,
+			handler,
+		)
 
-		self.config_apply(values, name, source, type)
+		self._handler = handler
+		self._preprocessor = preprocessor = self._prepare_preprocessor(preprocessor)
+		self._filter = self._prepare_filter(filter, preprocessor)
+
+		self.config_apply(
+			values,
+			self._name,
+			self._source,
+			self._type,
+			self._handler
+		)
+
+	def __val_or_val(self, val1: Any | None, val2: Any | None):
+		return val2 if val1 is None else val1
+
+	def _prepare_supported_types(
+		self,
+		values,
+		name: str = None,
+		source: SourceType = None,
+		type: str = None,
+		handler: HandlerType = None
+	):
+		if isinstance(values, _Environ):
+			name = self.__val_or_val(name, "environ")
+			source = self.__val_or_val(source, "os")
+			type = self.__val_or_val(type, ConfigStoreType.ENV_VARS)
+		elif isinstance(values, Namespace):
+			name = self.__val_or_val(name, "args")
+			source = self.__val_or_val(source, values)
+			type = self.__val_or_val(type, ConfigStoreType.ARGPARSER_NAMESPACE)
+			values = vars(values)
+		elif isinstance(values, self.__class__):
+			name = self.__val_or_val(name, values.name)
+			source = self.__val_or_val(source, values.source)
+			type = self.__val_or_val(type, values.type)
+			handler = self.__val_or_val(handler, values.handler)
+		elif isinstance(values, dict):
+			type = self.__val_or_val(type, ConfigStoreType.DICT)
+		elif values is not None:
+			raise TypeError(
+				f"Unsupported data-type. ConfigStore supports only {ConfigType}"
+			)
+
+		if not type:
+			type = self.__class__.__name__
+
+		return values, name, source, type, handler
 
 	def _key_replace_callback(self, mapped_keys: dict[str, str], key: str, val: Any):
 		"""
@@ -105,62 +159,58 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		# NOTE  Returning key and val intact
 		return key, val
 
-	def _process_iterable(self, preprocessor: PreProcessorType, filter: FilterType, key: str, val: Any):
-		applied_keys = []
-		if isinstance(filter, Iterable):
-			for filter_key in filter:
-				if preprocessor is not None:
-					filter_key, _ = preprocessor(filter_key, None)
-				if filter_key == key:
-					applied_keys.append(key)
-					self._storage[key] = val
-					break
-		return applied_keys
+	def _prepare_preprocessor(self, preprocessor):
 
-	def _preprocessor_prepare(self):
-		preprocessor = self._preprocessor
+		if isinstance(preprocessor, dict):
+			# MARK  Maybe refactor this to avoid using lambda due to performance limitations
+			_preprocessor_data = preprocessor
 
-		if preprocessor:
-			if isinstance(preprocessor, dict):
-				# MARK  Maybe refactor this to avoid using lambda due to performance limitations
-				_preprocessor_data = preprocessor
+			def _wrapper(k, v):
+				return self._key_replace_callback(_preprocessor_data, k, v)
 
-				def _wrapper(k, v):
-					return self._key_replace_callback(_preprocessor_data, k, v)
+			preprocessor = _wrapper
+		elif not callable(preprocessor):
 
-				preprocessor = _wrapper
+			def _wrapper(k, v):
+				return k, v
+
+			preprocessor = _wrapper
 
 		return preprocessor
 
-	def _preprocess_filter_and_apply(self, config: ConfigType):
-		"""
-		Running preprocessing, filtering and applying final values
+	def _prepare_filter(self, filter: FilterType, preprocessor: Callable):
+		_filter = filter
+		if isinstance(filter, Iterable):
+			def _wrapper(key: str, val: Any):
+				key, _ = preprocessor(key, val)
+				if not _filter:
+					return True
+				for filter_key in _filter:
+					filter_key, _ = preprocessor(filter_key, None)
+					if filter_key == key:
+						return True
+				return False
+			filter = _wrapper
+		elif not callable(filter):
+			def _wrapper(key: str, val: Any):
+				return True
+			filter = _wrapper
 
-		:param config:
-		:return:
-		"""
-		preprocessor = self._preprocessor_prepare()
+		return filter
 
-		if isinstance(config, Namespace):
-			config = vars(config)
-
+	def _apply_data(self, config: ConfigType, preprocessor: Callable, filter: Callable):
 		applied_keys = []
-		for key, val in config.items():
-			if preprocessor is not None:
-				key, val = preprocessor(key, val)
-			if self._filter:
-				filter = self._filter
 
-				applied_keys.extend(
-					self._process_iterable(preprocessor, filter, key, val)
-				)
-
-				if callable(filter) and filter(key, val):
-					applied_keys.append(key)
-					self._storage[key] = val
-			else:
+		for key, val in dict(config).items():
+			key, val = preprocessor(key, val)
+			if filter(key, val):
 				applied_keys.append(key)
 				self._storage[key] = val
+
+		if not self._initial_preprocessed_keys and config is not None:
+			for key in dict(config).keys():
+				key, _ = preprocessor(key, None)
+				self._initial_preprocessed_keys.append(key)
 
 		return applied_keys
 
@@ -170,7 +220,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		name: str = None,
 		source: SourceType = None,
 		type: str = None,
-		handler=None,
+		handler: HandlerType = None,
 	) -> Self:
 		"""
 		Setting values to the object that could be accessed dict-like style
@@ -186,27 +236,12 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		"""
 		if not config:  # pragma: no cover
 			return self
-		if isinstance(config, self.__class__):
-			if not name:
-				name = config.name
-			if not source:
-				source = config.source
-			if not type:
-				type = config.type
-			if not handler:
-				handler = config.handler
 
-		if type is None:
-			type = ConfigStoreType.DICT
+		applied_conf_class = self._applied_conf_class
 
-		if isinstance(config, Namespace):
-			name = "args"
-			source = config
-			type = ConfigStoreType.ARGPARSER_NAMESPACE
+		config, name, source, type, handler = self._prepare_supported_types(config, name, source, type, handler)
 
-		applied_keys = self._preprocess_filter_and_apply(config)
-
-		applied_conf_class = self.applied_conf_class()
+		applied_keys = self._apply_data(config, self._preprocessor, self._filter)
 
 		self._applied_confs.append(
 			applied_conf_class(
@@ -260,7 +295,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		del self._storage[key]
 
 	def __getitem__(self, key):
-		preprocessor = self._preprocessor_prepare()
+		preprocessor = self._preprocessor
 
 		if isinstance(key, str) and isinstance(key, Enum):
 			key, _ = preprocessor(key.value, None)
@@ -274,7 +309,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		:param default:
 		:return:
 		"""
-		preprocessor = self._preprocessor_prepare()
+		preprocessor = self._preprocessor
 
 		if isinstance(key, str) and isinstance(key, Enum):
 			key, _ = preprocessor(key.value, None)

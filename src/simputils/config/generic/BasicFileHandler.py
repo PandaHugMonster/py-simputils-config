@@ -3,7 +3,6 @@ from io import IOBase
 from os.path import exists, basename, realpath
 
 from simputils.config.enums import ConfigStoreType
-from simputils.config.models import ConfigStore
 from simputils.config.types import FileType
 
 
@@ -24,6 +23,8 @@ class BasicFileHandler(metaclass=ABCMeta):
 		return (self.CONFIG_TYPE,)
 
 	def _prepare_conf(self, file: FileType):
+		from simputils.config.models import ConfigStore
+
 		if isinstance(file, IOBase):
 			name = type(file).__name__
 			source = file
@@ -41,3 +42,6 @@ class BasicFileHandler(metaclass=ABCMeta):
 			type=_type,
 			handler=self,
 		)
+
+	def __call__(self, file: FileType):
+		return self.process_file(file)

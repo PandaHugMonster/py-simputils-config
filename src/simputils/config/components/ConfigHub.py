@@ -1,8 +1,4 @@
-from argparse import Namespace
-from os import _Environ
-
 from simputils.config.components.handlers import YamlFileHandler, JsonFileHandler, DotEnvFileHandler
-from simputils.config.enums import ConfigStoreType
 from simputils.config.exceptions import NoAvailableHandlers, NoHandler
 from simputils.config.models import ConfigStore
 from simputils.config.types import HandlerType, ConfigType, FileType, SourceType
@@ -15,13 +11,13 @@ class ConfigHub:
 	Allows to aggregate from multiple object types and sources like dict, file, StringIO, etc.
 	"""
 
+	skip_files_with_missing_handler: bool = True
 	file_handlers: list[HandlerType] = [
 		# NOTE  Order matters!
 		JsonFileHandler(),
 		YamlFileHandler(),
 		DotEnvFileHandler(),
 	]
-	skip_files_with_missing_handler: bool = True
 
 	@classmethod
 	def aggregate(
@@ -41,30 +37,17 @@ class ConfigHub:
 		"""
 		if target is None:  # pragma: no cover
 			target = ConfigStore()
+
 		for arg in args:
 			if isinstance(arg, FileType):
 				target += cls.config_from_file(arg)
-			elif isinstance(arg, _Environ):
-				target += cls.config_from_dict(
-					arg,
-					name="environ",
-					source="os",
-					type=ConfigStoreType.ENV_VARS,
-				)
-			elif isinstance(arg, (ConfigStore, dict)):
+			elif isinstance(arg, ConfigType):
 				target += cls.config_from_dict(arg)
-			elif isinstance(arg, Namespace):
-				target += cls.config_from_dict(
-					arg,
-					name="args",
-					source=arg,
-					type=ConfigStoreType.ARGPARSER_NAMESPACE,
-				)
 			else:
-				# MARK  Proper exception type needed!
 				raise TypeError(
-					f"unsupported operand type(s) for +: '{ConfigType | FileType}' and '{type(arg).__name__}'"
+					f"Unsupported data-type. ConfigStore supports only {ConfigType}"
 				)
+
 		return target
 
 	@classmethod
@@ -126,7 +109,7 @@ class ConfigHub:
 
 		is_handled = False
 		for h in available_handlers:
-			sub_res: ConfigStore | None = h.process_file(file)
+			sub_res: ConfigStore | None = h(file)
 			if sub_res is not None:
 				is_handled = True
 

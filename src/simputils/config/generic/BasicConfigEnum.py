@@ -14,15 +14,33 @@ class BasicConfigEnum(str, Enum):
 	@classmethod
 	def defaults(cls) -> dict:
 		res = {}
-		annotations = getattr(cls, "__annotations__")
 		for m in cls:
 			default = None
-			if annotations and (d := annotations.get(m.name)):
-				try:
-					_, annotated_config_data = get_args(d)
-					default = annotated_config_data.data.get("default")
-				except ValueError:  # pragma: no cover
-					pass
+			annotated_config_data = cls.get_annotation_for(m.value)
+			if annotated_config_data:
+				default = annotated_config_data.data.get("default")
 			res[m.value] = default
 
+		return res
+
+	@classmethod
+	def get_annotation_for(cls, name: "BasicConfigEnum | str"):
+		name = cls(name).name
+
+		annotations = getattr(cls, "__annotations__")
+		if annotations and (d := annotations.get(name)):
+			try:
+				_, annotated_config_data = get_args(d)
+				return annotated_config_data
+			except ValueError:  # pragma: no cover
+				pass
+		return None
+
+	@classmethod
+	def get_all_annotations(cls):
+		res = {}
+		for m in cls:
+			annotated_config_data = cls.get_annotation_for(m)
+			if annotated_config_data:
+				res[m] = annotated_config_data
 		return res

@@ -344,3 +344,36 @@ class TestConfigStore:
 		assert conf["VAL_2"] == "My conf value 2"
 		assert conf["VAL_3"] is None
 		assert conf["PARAM_1"] is None
+
+	def test_enum_annotations(self):
+		class MyEnum(BasicConfigEnum):
+			MY_E_KEY_1 = "my-e-key-1"
+
+			MY_E_KEY_2: Annotated[str, AnnotatedConfigData(
+				default=3.1415
+			)] = "my-e-key-2"
+
+			MY_E_KEY_3 = "my-e-key-3"
+			MY_E_KEY_4 = "my-e-key-4"
+			MY_E_KEY_5 = "my-e-key-5"
+
+			# Some of them used in `app-conf.yml`
+			MY_FIRST_VAL = "val-1"
+			MY_SECOND_VAL = "VAL_2"
+
+		conf = ConfigHub.aggregate(
+			"tests/data/config-1.yml",
+
+			target=ConfigStore(
+				MyEnum.defaults(),
+				preprocessor=simputils_pp,
+				filter=True
+			),
+		)
+
+		annotations = MyEnum.get_all_annotations()
+
+		assert conf
+		assert len(annotations) == 1
+		assert isinstance(annotations[MyEnum.MY_E_KEY_2], AnnotatedConfigData)
+		assert annotations[MyEnum.MY_E_KEY_2].data["default"] == 3.1415

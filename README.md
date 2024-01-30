@@ -1,6 +1,15 @@
 # Python SimpUtils Config
 Simplifies working with configs and params.
 
+## Installation
+
+This will install the latest version of the major version `1`.
+It's safe enough due to followed by the project Semantic Versioning paradigm.
+
+```shell
+pip install "simputils-config~=1.0"
+```
+
 ## Description
 Class `simputils.config.models.ConfigStore` is the keystone of the library.
 Object of it represents config, that could be used to sequentially apply different sets of key-value
@@ -35,9 +44,57 @@ If you need support for other types, you will have to implement your custom hand
 
 ## Documentation
 * [The overall example](docs/overall-example.md)
+* [Working with enums and annotations](docs/working-with-enums-and-annotations.md)
 * [Working with `ConfigStore`](docs/working-with-config-store.md)
 
 ## Generic examples
+
+### The simplest usage
+
+Aggregation from multiple sources (you can specify any number of sources).
+
+> [!IMPORTANT]
+> Keep in mind that order matters, keys/values from the latest might override already specified
+
+From files:
+```python
+from simputils.config.components import ConfigHub
+
+conf = ConfigHub.aggregate(
+    "config-1.yml",
+    "config-2.yml",
+    # ...
+)
+print(conf, conf.applied_confs)
+```
+
+From dictionaries:
+```python
+from simputils.config.components import ConfigHub
+
+conf = ConfigHub.aggregate(
+	{"key1": "val1", "key2": "val2"},
+    {"key2": "redefined val2", "key3": "val3"},
+    # ...
+)
+print(conf, conf.applied_confs)
+```
+
+Accessing values:
+```python
+
+# Accessing values by name, if does not exist - None is returned
+conf["key1"]
+conf["key2"]
+
+# Accessing values by name, if does not exist or None - `default` parameter value is returned
+conf.get("key1", "My Default Value")
+conf.get("key2")
+
+# Iterating as a dictionary
+for key, val in conf.items():
+    print(key, val)
+```
 
 ### Enums as default config with filter
 

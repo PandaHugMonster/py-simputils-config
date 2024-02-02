@@ -47,6 +47,16 @@ If you need support for other types, you will have to implement your custom hand
 * [Working with enums and annotations](docs/working-with-enums-and-annotations.md)
 * [Working with `ConfigStore`](docs/working-with-config-store.md)
 
+### Config Modifiers
+
+There are 3 config modifiers that could be applied: `preprocessor`, `filter` and annotation type-casting 
+
+> [!INFO]
+> The order of config modifiers applied to each config:
+> 1. `preprocessor`
+> 2. `filter`
+> 3. Annotation type-casting
+
 ## Generic examples
 
 ### The simplest usage

@@ -4,7 +4,19 @@
 ## 1.0.4
 * Improved `Enum` usage with configs #13
   * Documentation here [working-with-enums-and-annotations.md](working-with-enums-and-annotations.md)
+  * Implemented `simputils.config.base.get_enum_defaults()`
+    method to get default values form `Enum` class
+  * Implemented `simputils.config.base.get_enum_annotation_for()` 
+    method to get specific annotation for specific key of `Enum`
+  * Implemented `simputils.config.base.get_enum_all_annotations()` 
+    method to get all available annotations of `Enum`
+  * Added `ENUM` key to `simputils.config.enums.ConfigStoreType`
+  * Implemented `simputils.config.generic.BasicConfigEnum.target_config()` shortcut
+  * Added support of `Enum` class for `simputils.config.generic.BasicConfigStore`.
+    So you can specify a raw class reference as a source of config
+  * Added `type` field to `simputils.config.models.AnnotatedConfigData` for type casting
 * Added disclaimer [Potential package collision 2024](disclaimers.md)
+* Some more cleanups and small improvements
 
 ## 1.0.3
 * Added `simputils.config.generic.BasicConfigEnum.get_annotation_for()` class method

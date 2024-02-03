@@ -4,6 +4,7 @@
 ## 1.0.4
 * Improved `Enum` usage with configs #13
   * Documentation here [working-with-enums-and-annotations.md](working-with-enums-and-annotations.md)
+* Added disclaimer [Potential package collision 2024](disclaimers.md)
 
 ## 1.0.3
 * Added `simputils.config.generic.BasicConfigEnum.get_annotation_for()` class method

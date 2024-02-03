@@ -10,6 +10,16 @@ It's safe enough due to followed by the project Semantic Versioning paradigm.
 pip install "simputils-config~=1.0"
 ```
 
+> [!WARNING]
+> Developer of this project has nothing to do with `simputils` package of pypi.
+> And installation of both might cause broken code. 
+> 
+> On the end of this project, the namespace `simputils` is made "shareable".
+> But the structure of another developer's package is not designed in such way
+> 
+> Disclaimer about that you can find here [Potential package collision 2024](docs/disclaimers.md)
+
+
 ## Description
 Class `simputils.config.models.ConfigStore` is the keystone of the library.
 Object of it represents config, that could be used to sequentially apply different sets of key-value

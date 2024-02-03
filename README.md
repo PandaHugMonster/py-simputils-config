@@ -25,6 +25,10 @@ debug and control from where which value came from.
 The major purpose of the functionality comes from using multiple files as sources for your config,
 but it still allows to apply sets directly from the code.
 
+Project follows [Semantic Versioning](https://semver.org/) standard. 
+No breaking changes suppose to be within `minor` and `patch` versions of the same `major` version.
+Exception is only if there is a bug, that gets fixed.
+
 > [!CAUTION]
 > `ConfigStore` object is behaving like a `dict`, so if you need to check if
 > the variable with this object is None, always check it like `if conf is None:`,
@@ -43,6 +47,7 @@ When working with files, keep in mind that the only supported files are `.yml`, 
 If you need support for other types, you will have to implement your custom handler for those file-types.
 
 ## Documentation
+* [CHANGELOG.md](docs/CHANGELOG.md) - Please make sure you check it for new features and changes
 * [The overall example](docs/overall-example.md)
 * [Working with enums and annotations](docs/working-with-enums-and-annotations.md)
 * [Working with `ConfigStore`](docs/working-with-config-store.md)

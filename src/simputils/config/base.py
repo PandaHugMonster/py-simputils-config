@@ -1,5 +1,6 @@
-import re
 from typing import Any, get_args
+
+_local_storage = {}
 
 
 def simputils_pp(k: str, v: Any, replace_pattern=r"[^0-9a-zA-Z_]+", replaced_with="_"):
@@ -15,8 +16,29 @@ def simputils_pp(k: str, v: Any, replace_pattern=r"[^0-9a-zA-Z_]+", replaced_wit
 	:param v:
 	:return:
 	"""
-	k = re.sub(replace_pattern, replaced_with, k).upper()
+	if "_standard_preprocessor" not in _local_storage or not _local_storage["_standard_preprocessor"]:
+		from simputils.config.components.preprocessors import SimputilsStandardPreprocessor
 
+		_local_storage["_standard_preprocessor"] = SimputilsStandardPreprocessor()
+	func = _local_storage["_standard_preprocessor"]
+
+	return func(k, v, replace_pattern, replaced_with)
+
+
+def simputils_cast(k: str, v: Any):
+	if "_casting_preprocessor" not in _local_storage or not _local_storage["_casting_preprocessor"]:
+		from simputils.config.components.preprocessors import SimputilsCastingPreprocessor
+
+		_local_storage["_casting_preprocessor"] = SimputilsCastingPreprocessor()
+	func = _local_storage["_casting_preprocessor"]
+
+	return func(k, v)
+
+
+def simputils_pp_with_cast(k: str, v: Any, replace_pattern=r"[^0-9a-zA-Z_]+", replaced_with="_"):
+	k, v = simputils_pp(k, v, replace_pattern, replaced_with)
+	k, v = simputils_cast(k, v)
+	# TODO  Not covered!
 	return k, v
 
 

@@ -1,59 +1,69 @@
-from simputils.config.base import simputils_pp, simputils_cast
+import pytest
+
+from simputils.config.base import simputils_pp_with_cast
+
+_params_fixture_names = "key_orig,key_exp,val_orig,val_exp,val_type"
+_params_fixture_values = [
+	# "key_orig,key_exp,val_orig,val_exp,val_type"
+	(
+		"my key 1", "MY_KEY_1",
+		"My value 1", "My value 1", str
+	),
+	(
+		"my-key-2", "MY_KEY_2",
+		"3.14.15", "3.14.15", str
+	),
+
+	(
+		"MY_KEY_3", "MY_KEY_3",
+		"0", 0, int
+	),
+	(
+		"my.KEy-4", "MY_KEY_4",
+		"123", 123, int
+	),
+	(
+		"my    KEy-----5", "MY_KEY_5",
+		"-15", -15, int
+	),
+	("K", "K", "+15", 15, int),
+
+	("K", "K", "123.0", 123.0, float),
+	("K", "K", "0.0", 0.0, float),
+	("K", "K", "-3.1415", -3.1415, float),
+	("K", "K", "+3.1415", 3.1415, float),
+
+	("K", "K", "t", True, bool),
+	("K", "K", "T", True, bool),
+	("K", "K", "f", False, bool),
+	("K", "K", "F", False, bool),
+	("K", "K", "yes", True, bool),
+	("K", "K", "NO", False, bool),
+	("K", "K", "enabled", True, bool),
+	("K", "K", "DiSaBlEd", False, bool),
+	("K", "K", "true", True, bool),
+	("K", "K", "False", False, bool),
+	("K", "K", "-", False, bool),
+	("K", "K", "+", True, bool),
+
+	("K", "K", "nul", "nul", str),
+	("K", "K", "null", None, None),
+	("K", "K", "None", None, None),
+	("K", "K", "NOne", None, None),
+	("K", "K", "nil", None, None),
+	("K", "K", "nIL", None, None),
+]
 
 
 class TestPreprocessors:
 
-	def test_standard_preprocessor(self):
-		to_check = {
-			"my key 1": "MY_KEY_1",
-			"my-key-2": "MY_KEY_2",
-			"MY_KEY_3": "MY_KEY_3",
-			"my.KEy-4": "MY_KEY_4",
-			"my    KEy-----5": "MY_KEY_5",
-		}
-		for orig_k, exp_k in to_check.items():
-			k, _ = simputils_pp(orig_k, None)
-			assert exp_k == k
+	@pytest.mark.parametrize(_params_fixture_names, _params_fixture_values)
+	def test_both_simputils_processor(self, key_orig, key_exp, val_orig, val_exp, val_type):
+		k, v = simputils_pp_with_cast(key_orig, val_orig)
 
-	def test_casting_preprocessor(self):
-		to_check = (
-			("My value 1", str, "My value 1"),
-			("3.14.15", str, "3.14.15"),
+		assert key_exp == k
 
-			("0", int, 0),
-			("123", int, 123),
-			("-15", int, -15),
-			("+15", int, 15),
-
-			("123.0", float, 123.0),
-			("0.0", float, 0.0),
-			("-3.1415", float, -3.1415),
-			("+3.1415", float, 3.1415),
-
-			("t", bool, True),
-			("T", bool, True),
-			("f", bool, False),
-			("F", bool, False),
-			("yes", bool, True),
-			("NO", bool, False),
-			("enabled", bool, True),
-			("DiSaBlEd", bool, False),
-			("true", bool, True),
-			("False", bool, False),
-			("-", bool, False),
-			("+", bool, True),
-
-			("nul", str, "nul"),
-			("null", None, None),
-			("None", None, None),
-			("NOne", None, None),
-			("nil", None, None),
-			("nIL", None, None),
-		)
-		for group in to_check:
-			orig_v, exp_type, exp_value = group
-			_, v = simputils_cast("gg", orig_v)
-			if exp_type is not None:
-				assert isinstance(v, exp_type) and v == exp_value, f"error \"{v}\" of {exp_value}"
-			else:
-				assert v is exp_value, f"error \"{v}\" of {exp_value}"
+		if val_type is not None:
+			assert isinstance(v, val_type) and v == val_exp, f"error \"{v}\" of {val_exp}"
+		else:
+			assert v is val_exp, f"error \"{v}\" of {val_exp}"

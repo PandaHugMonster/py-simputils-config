@@ -14,3 +14,4 @@ class ConfigStoreType(str, Enum):
 	SINGLE_VALUE = "single-value"
 	DICT = "dict"
 	ARGPARSER_NAMESPACE = "argparser"
+	ENUM = "enum"

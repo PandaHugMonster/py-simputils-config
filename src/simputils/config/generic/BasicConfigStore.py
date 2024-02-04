@@ -3,19 +3,24 @@ from abc import ABCMeta, abstractmethod
 from argparse import Namespace
 from collections.abc import Iterable
 from enum import Enum
+# noinspection PyUnresolvedReferences,PyProtectedMember
 from os import _Environ
 from typing import Any, Callable
 
 from typing_extensions import Self
 
+from simputils.config.base import get_enum_defaults, get_enum_all_annotations
 from simputils.config.enums import ConfigStoreType
 from simputils.config.exceptions import NotPermitted
 from simputils.config.generic import BasicAppliedConf
 from simputils.config.types import ConfigType, PreProcessorType, FilterType, SourceType, HandlerType
 
+_type_func = type
+
 
 class BasicConfigStore(dict, metaclass=ABCMeta):
 
+	_op_class = None
 	_return_default_on_none: bool = True
 	_name: str = None
 	_source: SourceType = None
@@ -134,6 +139,10 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 			handler = self.__val_or_val(handler, values.handler)
 		elif isinstance(values, dict):
 			type = self.__val_or_val(type, ConfigStoreType.DICT)
+		elif inspect.isclass(values) and issubclass(values, Enum) and issubclass(values, str):
+			name = _type_func(values)
+			source = values
+			type = ConfigStoreType.ENUM
 		elif values is not None:
 			raise TypeError(
 				f"Unsupported data-type. ConfigStore supports only {ConfigType}"
@@ -162,11 +171,19 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 	def _prepare_preprocessor(self, preprocessor):
 
 		if isinstance(preprocessor, dict):
-			# MARK  Maybe refactor this to avoid using lambda due to performance limitations
 			_preprocessor_data = preprocessor
 
 			def _wrapper(k, v):
 				return self._key_replace_callback(_preprocessor_data, k, v)
+
+			preprocessor = _wrapper
+		elif isinstance(preprocessor, (tuple, list)):
+			_callable_list = preprocessor
+
+			def _wrapper(k, v):
+				for cbk in _callable_list:
+					k, v = cbk(k, v)
+				return k, v
 
 			preprocessor = _wrapper
 		elif not callable(preprocessor):
@@ -246,6 +263,30 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		applied_conf_class = self._applied_conf_class
 
 		config, name, source, type, handler = self._prepare_supported_types(config, name, source, type, handler)
+
+		if not self.applied_confs:
+			if inspect.isclass(config) and issubclass(config, Enum) and issubclass(config, str):
+				self._op_class = config
+
+		if config:
+			if inspect.isclass(config) and issubclass(config, Enum) and issubclass(config, str):
+				config = get_enum_defaults(self._op_class)
+
+		if self._op_class and issubclass(self._op_class, Enum) and issubclass(self._op_class, str):
+			annotations = get_enum_all_annotations(self._op_class)
+			for key, val in config.items():
+				if key not in annotations:
+					continue
+				annotated_data = annotations[key].data
+
+				_check = annotated_data and \
+					"type" in annotated_data and \
+					annotated_data["type"] \
+					and isinstance(annotated_data["type"], Callable)
+
+				if _check:
+					annotated_type = annotated_data["type"]
+					config[key] = annotated_type(val)
 
 		applied_keys = self._apply_data(config, self._preprocessor, self._filter)
 

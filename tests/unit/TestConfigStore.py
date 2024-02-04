@@ -377,3 +377,101 @@ class TestConfigStore:
 		assert len(annotations) == 1
 		assert isinstance(annotations[MyEnum.MY_E_KEY_2], AnnotatedConfigData)
 		assert annotations[MyEnum.MY_E_KEY_2].data["default"] == 3.1415
+
+	def test_raw_enum_class_usage_single(self):
+		class MyEnum(BasicConfigEnum):
+			MY_E_KEY_1 = "my-e-key-1"
+
+			MY_E_KEY_2: Annotated[str, AnnotatedConfigData(
+				default=3.1415
+			)] = "my-e-key-2"
+
+			MY_E_KEY_3 = "my-e-key-3"
+			MY_E_KEY_4 = "my-e-key-4"
+			MY_E_KEY_5 = "my-e-key-5"
+
+			# Some of them used in `app-conf.yml`
+			MY_FIRST_VAL = "val-1"
+			MY_SECOND_VAL = "VAL_2"
+
+		conf = ConfigHub.aggregate(
+			"tests/data/config-1.yml",
+
+			target=ConfigStore(
+				MyEnum,
+
+				preprocessor=simputils_pp,
+				filter=True
+			),
+		)
+
+		annotations = MyEnum.get_all_annotations()
+
+		assert conf
+		assert len(conf) == 7
+		assert conf[MyEnum.MY_E_KEY_2] == 3.1415
+		assert conf[MyEnum.MY_FIRST_VAL] == "My conf value 1"
+
+	def test_raw_enum_class_usage_multiple(self):
+		class MyEnum1(BasicConfigEnum):
+			MY_E_KEY_1 = "my-e-key-1"
+
+			MY_E_KEY_2: Annotated[str, AnnotatedConfigData(
+				default=3.1415
+			)] = "my-e-key-2"
+
+		class MyEnum2(BasicConfigEnum):
+			MY_E_KEY_3 = "my-e-key-3"
+			MY_E_KEY_4 = "my-e-key-4"
+			MY_E_KEY_5 = "my-e-key-5"
+
+			# Some of them used in `app-conf.yml`
+			MY_FIRST_VAL = "val-1"
+			MY_SECOND_VAL = "VAL_2"
+
+		conf = ConfigHub.aggregate(
+			"tests/data/config-1.yml",
+
+			target=ConfigStore(
+
+				MyEnum1.target_config() + MyEnum2.target_config(),
+
+				preprocessor=simputils_pp,
+				filter=True
+			),
+		)
+
+		assert conf
+		assert len(conf) == 7
+		assert conf[MyEnum1.MY_E_KEY_2] == 3.1415
+		assert conf[MyEnum2.MY_FIRST_VAL] == "My conf value 1"
+
+	def test_enum_type_casting(self):
+		class MyEnum(BasicConfigEnum):
+			MY_E_KEY_1: Annotated[str, AnnotatedConfigData(
+				default=True,
+				type=float,
+			)] = "my-e-key-1"
+
+			MY_E_KEY_2: Annotated[str, AnnotatedConfigData(
+				default=False,
+				type=float,
+			)] = "my-e-key-2"
+
+		conf = ConfigHub.aggregate(
+			"tests/data/config-1.yml",
+
+			target=ConfigStore(
+				MyEnum,
+
+				preprocessor=simputils_pp,
+				filter=True
+			),
+		)
+
+		assert conf
+		assert len(conf) == 2
+		assert isinstance(conf[MyEnum.MY_E_KEY_1], float)
+		assert isinstance(conf[MyEnum.MY_E_KEY_2], float)
+		assert conf[MyEnum.MY_E_KEY_1] == 1
+		assert conf[MyEnum.MY_E_KEY_2] == 0

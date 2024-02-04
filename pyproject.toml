@@ -27,6 +27,11 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+where = ["src/"]
+include = ["simputils.config"]
+
+
 [tool.setuptools_scm]
 
 [project.optional-dependencies]

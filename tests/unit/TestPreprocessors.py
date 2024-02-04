@@ -1,6 +1,7 @@
 import pytest
 
-from simputils.config.base import simputils_pp_with_cast
+from simputils.config.base import simputils_pp_with_cast, simputils_pp, simputils_cast
+from simputils.config.models import ConfigStore
 
 _params_fixture_names = "key_orig,key_exp,val_orig,val_exp,val_type"
 _params_fixture_values = [
@@ -67,3 +68,25 @@ class TestPreprocessors:
 			assert isinstance(v, val_type) and v == val_exp, f"error \"{v}\" of {val_exp}"
 		else:
 			assert v is val_exp, f"error \"{v}\" of {val_exp}"
+
+	def test_list_for_preprocessor(self):
+		conf = ConfigStore(
+			{
+				"my key #1": "My first key",
+				"my key 2": "0.0",
+				"my KEy 3": "",
+			},
+			preprocessor=[
+				simputils_pp,
+				simputils_cast,
+			],
+		)
+
+		assert conf
+
+		assert "MY_KEY_1" in conf
+		assert isinstance(conf["MY_KEY_1"], str)
+		assert "MY_KEY_2" in conf
+		assert isinstance(conf["MY_KEY_2"], float)
+		assert "MY_KEY_3" in conf
+		assert conf["MY_KEY_3"] is None

@@ -1,7 +1,5 @@
 from typing import Any, get_args
 
-_local_storage = {}
-
 
 def simputils_pp(k: str, v: Any, replace_pattern=r"[^0-9a-zA-Z_]+", replaced_with="_"):
 	"""
@@ -16,21 +14,17 @@ def simputils_pp(k: str, v: Any, replace_pattern=r"[^0-9a-zA-Z_]+", replaced_wit
 	:param v:
 	:return:
 	"""
-	if "_standard_preprocessor" not in _local_storage or not _local_storage["_standard_preprocessor"]:
-		from simputils.config.components.preprocessors import SimputilsStandardPreprocessor
+	from simputils.config.components.preprocessors import SimputilsStandardPreprocessor
 
-		_local_storage["_standard_preprocessor"] = SimputilsStandardPreprocessor()
-	func = _local_storage["_standard_preprocessor"]
+	func = SimputilsStandardPreprocessor()
 
 	return func(k, v, replace_pattern, replaced_with)
 
 
 def simputils_cast(k: str, v: Any):
-	if "_casting_preprocessor" not in _local_storage or not _local_storage["_casting_preprocessor"]:
-		from simputils.config.components.preprocessors import SimputilsCastingPreprocessor
+	from simputils.config.components.preprocessors import SimputilsCastingPreprocessor
 
-		_local_storage["_casting_preprocessor"] = SimputilsCastingPreprocessor()
-	func = _local_storage["_casting_preprocessor"]
+	func = SimputilsCastingPreprocessor()
 
 	return func(k, v)
 

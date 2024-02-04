@@ -6,9 +6,9 @@ from simputils.config.generic import BasicPreprocessor
 
 class SimputilsCastingPreprocessor(BasicPreprocessor):
 
-	list_yes = ['enabled', 'yes', 't', 'true', 'y', '+', 'enable']
-	list_no = ['disabled', 'no', 'f', 'false', 'n', '-', 'disable']
-	list_none = ['null', 'none', 'nil']
+	list_yes = ["yes", "y", "t", "true", "+", "enable", "enabled", "on"]
+	list_no = ["no", "n", "f", "false", "-", "disable", "disabled", "off"]
+	list_none = ["null", "none", "nil", ""]
 
 	def run(
 		self,

@@ -15,7 +15,8 @@ classifiers = [
 dependencies = [
     "pyyaml",
     "python-magic",
-    "python-dotenv"
+    "python-dotenv",
+    "typing_extensions"
 ]
 license = {file = "LICENSE"}
 keywords = ["simputils", "config", "files", "utils", "framework", "simple"]

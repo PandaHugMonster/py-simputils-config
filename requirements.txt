@@ -4,3 +4,4 @@ python-dotenv
 pytest
 pytest-cov
 flake8
+typing_extensions

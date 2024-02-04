@@ -17,6 +17,20 @@
   * Added `type` field to `simputils.config.models.AnnotatedConfigData` for type casting
 * Added disclaimer [Potential package collision 2024](disclaimers.md)
 * Some more cleanups and small improvements
+* Improved preprocessors infrastructure and added type auto-casting for strings #11
+  * Improved `simputils.config.base.simputils_pp()` 
+    function through class `simputils.config.components.preprocessors.SimputilsStandardPreprocessor`
+  * Added `simputils.config.base.simputils_cast()` for auto-casting strings
+  * Added `simputils.config.base.simputils_pp_with_cast()` for standard simputils key 
+    normalization auto-casting strings
+  * Implemented `simputils.config.components.preprocessors.SimputilsCastingPreprocessor` auto-casting preprocessor 
+  * Implemented `simputils.config.components.preprocessors.SimputilsStandardPreprocessor` key normalization 
+    (just code relocation from `simputils.config.base.simputils_pp()`)
+  * Implemented `simputils.config.generic.BasicPreprocessor`
+* Added documentation about preprocessing and filtering: 
+  [Preprocessing and filtering](preprocessing-and-filtering.md)
+* Now `list` or `tuple` with callables can be provided to the `preprocessor` param,
+  which sequentially will be applied to incoming key-value pairs.
 
 ## 1.0.3
 * Added `simputils.config.generic.BasicConfigEnum.get_annotation_for()` class method

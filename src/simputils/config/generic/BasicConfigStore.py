@@ -3,6 +3,7 @@ from abc import ABCMeta, abstractmethod
 from argparse import Namespace
 from collections.abc import Iterable
 from enum import Enum
+# noinspection PyUnresolvedReferences,PyProtectedMember
 from os import _Environ
 from typing import Any, Callable
 
@@ -170,11 +171,19 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 	def _prepare_preprocessor(self, preprocessor):
 
 		if isinstance(preprocessor, dict):
-			# MARK  Maybe refactor this to avoid using lambda due to performance limitations
 			_preprocessor_data = preprocessor
 
 			def _wrapper(k, v):
 				return self._key_replace_callback(_preprocessor_data, k, v)
+
+			preprocessor = _wrapper
+		elif isinstance(preprocessor, (tuple, list)):
+			_callable_list = preprocessor
+
+			def _wrapper(k, v):
+				for cbk in _callable_list:
+					k, v = cbk(k, v)
+				return k, v
 
 			preprocessor = _wrapper
 		elif not callable(preprocessor):

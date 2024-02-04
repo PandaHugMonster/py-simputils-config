@@ -1,4 +1,3 @@
-import re
 from typing import Any, get_args
 
 
@@ -15,8 +14,25 @@ def simputils_pp(k: str, v: Any, replace_pattern=r"[^0-9a-zA-Z_]+", replaced_wit
 	:param v:
 	:return:
 	"""
-	k = re.sub(replace_pattern, replaced_with, k).upper()
+	from simputils.config.components.preprocessors import SimputilsStandardPreprocessor
 
+	func = SimputilsStandardPreprocessor()
+
+	return func(k, v, replace_pattern, replaced_with)
+
+
+def simputils_cast(k: str, v: Any):
+	from simputils.config.components.preprocessors import SimputilsCastingPreprocessor
+
+	func = SimputilsCastingPreprocessor()
+
+	return func(k, v)
+
+
+def simputils_pp_with_cast(k: str, v: Any, replace_pattern=r"[^0-9a-zA-Z_]+", replaced_with="_"):
+	k, v = simputils_pp(k, v, replace_pattern, replaced_with)
+	k, v = simputils_cast(k, v)
+	# TODO  Not covered!
 	return k, v
 
 

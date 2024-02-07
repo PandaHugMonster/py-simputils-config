@@ -8,3 +8,4 @@ exclude =
     build,
     dist
 max-complexity = 10
+doctests = True

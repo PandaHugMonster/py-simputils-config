@@ -11,7 +11,7 @@ from typing_extensions import Self
 
 from simputils.config.base import get_enum_defaults, get_enum_all_annotations
 from simputils.config.enums import ConfigStoreType
-from simputils.config.exceptions import NotPermitted
+from simputils.config.exceptions import NotPermitted, StrictKeysEnabled
 from simputils.config.generic import BasicAppliedConf
 from simputils.config.types import ConfigType, PreProcessorType, FilterType, SourceType, HandlerType
 
@@ -31,6 +31,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 	_filter: FilterType = None
 	_applied_conf_class = None
 	_initial_preprocessed_keys: list[str] = None
+	_strict_keys: bool = False
 
 	_handler: HandlerType = None
 	"""Handler is just a reference, it is not being called from within ConfigStore"""
@@ -85,10 +86,12 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		filter: FilterType = None,
 		handler: HandlerType = None,
 		return_default_on_none: bool = True,
+		strict_keys: bool = False,
 	):
 		self._applied_confs = []
 		self._storage = {}
 		self._initial_preprocessed_keys = []
+		self._strict_keys = strict_keys
 		self._return_default_on_none = return_default_on_none
 		self._applied_conf_class = self.applied_conf_class()
 
@@ -303,6 +306,12 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		return self
 
 	def __setitem__(self, key, value):
+		preprocessor = self._preprocessor
+		key, _ = preprocessor(key, None)
+
+		if self._strict_keys and key not in self._storage:
+			raise StrictKeysEnabled(f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown")
+
 		frame_context = inspect.stack()[1][0]
 		frame_info = inspect.getframeinfo(frame_context)
 
@@ -330,6 +339,13 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		return None
 
 	def __add__(self, other):  # pragma: no cover
+		if self._strict_keys:
+			for key in other:
+				preprocessor = self._preprocessor
+				key, _ = preprocessor(key, None)
+				if key not in self._storage:
+					raise StrictKeysEnabled(
+						f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown")
 		return self.config_apply(other)
 
 	def __repr__(self):  # pragma: no cover
@@ -343,9 +359,11 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 	def __getitem__(self, key):
 		preprocessor = self._preprocessor
+		key, _ = preprocessor(key, None)
 
-		if isinstance(key, str) and isinstance(key, Enum):
-			key, _ = preprocessor(key.value, None)
+		if self._strict_keys and key not in self._storage:
+			raise StrictKeysEnabled(f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown")
+
 		return self._storage.get(key)
 
 	def get(self, key: str, default: Any = None):
@@ -357,9 +375,10 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		:return:
 		"""
 		preprocessor = self._preprocessor
+		key, _ = preprocessor(key, None)
 
-		if isinstance(key, str) and isinstance(key, Enum):
-			key, _ = preprocessor(key.value, None)
+		if self._strict_keys and key not in self._storage:
+			raise StrictKeysEnabled(f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown")
 
 		res = self._storage.get(key)
 		if self._return_default_on_none:
@@ -377,6 +396,12 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		return self._storage.copy()
 
 	def update(self, __m, **kwargs):
+		if self._strict_keys:
+			for key in __m:
+				preprocessor = self._preprocessor
+				key, _ = preprocessor(key, None)
+				if key not in self._storage:
+					raise StrictKeysEnabled(f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown")
 		self.config_apply(__m)
 
 	def keys(self):  # pragma: no cover

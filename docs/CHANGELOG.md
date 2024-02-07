@@ -1,7 +1,7 @@
 # Changelog
 
 ## 1.1.0
-* (#21)[https://github.com/PandaHugMonster/py-simputils-config/issues/21]
+* https://github.com/PandaHugMonster/py-simputils-config/issues/21
   * Implement flag and functionality for strict set of keys
   * Fixed a small bug with some minimal preprocessing when getting value by the "key". 
     Now all the provided keys are passing the `preprocessor` to conform with the rules.

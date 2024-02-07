@@ -3,6 +3,8 @@
 ## 1.1.0
 * Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/21
   * Implement flag and functionality for strict set of keys
+    * If enabled, and unknown key is accessed the `simputils.config.exceptions.StrictKeysEnabled` exception
+      is raised
   * Fixed a small bug with some minimal preprocessing when getting value by the "key". 
     Now all the provided keys are passing the `preprocessor` to conform with the rules.
 

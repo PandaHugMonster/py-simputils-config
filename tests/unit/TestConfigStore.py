@@ -3,9 +3,12 @@ from collections import OrderedDict
 from enum import Enum
 from typing import Annotated
 
-from simputils.config.base import simputils_pp
+import pytest
+
+from simputils.config.base import simputils_pp, simputils_pp_with_cast
 from simputils.config.components import ConfigHub
 from simputils.config.enums import ConfigStoreType
+from simputils.config.exceptions import StrictKeysEnabled
 from simputils.config.generic import BasicConfigEnum
 from simputils.config.models import ConfigStore, AppliedConf, AnnotatedConfigData
 
@@ -475,3 +478,32 @@ class TestConfigStore:
 		assert isinstance(conf[MyEnum.MY_E_KEY_2], float)
 		assert conf[MyEnum.MY_E_KEY_1] == 1
 		assert conf[MyEnum.MY_E_KEY_2] == 0
+
+	def test_strict_keys(self):
+		class MyEnum(BasicConfigEnum):
+			VAL_1 = "VAL_1"
+			VAL_2 = "VAL_2"
+			VAL_3 = "VAL_3"
+			VAL_4 = "VAL_4"
+			VAL_5 = "VAL_5"
+
+		conf = ConfigHub.aggregate(
+			{"val-1": "First value", "val-2": 12, "val-3": "f"},
+			target=ConfigStore(
+				MyEnum,
+				filter=True,
+				preprocessor=simputils_pp_with_cast,
+				strict_keys=True
+			)
+		)
+		with pytest.raises(StrictKeysEnabled) as exc_i:
+			conf.update({"test": "test1"})
+
+		with pytest.raises(StrictKeysEnabled) as exc_i:
+			conf["test"] = "test2"
+
+		with pytest.raises(StrictKeysEnabled) as exc_i:
+			g = conf["test"]
+
+		with pytest.raises(StrictKeysEnabled) as exc_i:
+			g = conf.get("test")

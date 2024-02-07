@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.5
+* Fixed missing dependency of `typing_extensions`
+
 
 ## 1.0.4
 * Improved `Enum` usage with configs #13

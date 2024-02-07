@@ -57,7 +57,7 @@ When working with files, keep in mind that the only supported files are `.yml`, 
 If you need support for other types, you will have to implement your custom handler for those file-types.
 
 ## Documentation
-* [CHANGELOG.md](docs/CHANGELOG.md) - Please make sure you check it for new features and changes
+* [Changelog](docs/CHANGELOG.md) - Please make sure you check it for new features and changes
 * [The overall example](docs/overall-example.md)
 * [Working with enums and annotations](docs/working-with-enums-and-annotations.md)
 * [Preprocessing and filtering](docs/preprocessing-and-filtering.md)

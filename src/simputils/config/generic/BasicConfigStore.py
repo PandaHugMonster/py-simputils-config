@@ -10,6 +10,7 @@ from typing import Any, Callable
 from typing_extensions import Self
 
 from simputils.config.base import get_enum_defaults, get_enum_all_annotations
+from simputils.config.components.prisms import ObjConfigStorePrism
 from simputils.config.enums import ConfigStoreType
 from simputils.config.exceptions import NotPermitted, StrictKeysEnabled
 from simputils.config.generic import BasicAppliedConf
@@ -18,6 +19,7 @@ from simputils.config.types import ConfigType, PreProcessorType, FilterType, Sou
 _type_func = type
 
 
+# noinspection PyMissingConstructor
 class BasicConfigStore(dict, metaclass=ABCMeta):
 
 	_op_class = None
@@ -36,10 +38,21 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 	_handler: HandlerType = None
 	"""Handler is just a reference, it is not being called from within ConfigStore"""
 
+	_obj_prism: ObjConfigStorePrism = None
+
 	@classmethod
 	@abstractmethod
 	def applied_conf_class(cls):  # pragma: no cover
 		pass
+
+	@property
+	def obj(self) -> ObjConfigStorePrism:
+		"""
+		Returns Object Prism for ConfigStore
+		"""
+		if not self._obj_prism:
+			self._obj_prism = ObjConfigStorePrism(self)
+		return self._obj_prism
 
 	@property
 	def name(self) -> str | None:
@@ -263,6 +276,8 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		if not config:  # pragma: no cover
 			return self
 
+		# MARK	Here missing the check for unknown keys!
+
 		applied_conf_class = self._applied_conf_class
 
 		config, name, source, type, handler = self._prepare_supported_types(config, name, source, type, handler)
@@ -305,24 +320,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		)
 		return self
 
-	def __setitem__(self, key, value):
-		preprocessor = self._preprocessor
-		key, _ = preprocessor(key, None)
-
-		if self._strict_keys and key not in self._storage:
-			raise StrictKeysEnabled(f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown")
-
-		frame_context = inspect.stack()[1][0]
-		frame_info = inspect.getframeinfo(frame_context)
-
-		self.config_apply(
-			{key: value},
-			f"{frame_info.function}:{frame_info.lineno}",
-			frame_info.filename,
-			ConfigStoreType.SINGLE_VALUE
-		)
-
-	def applied_from(self, key: str, include_unprocessed_keys: bool = False) -> dict:
+	def applied_from(self, key: str, include_unprocessed_keys: bool = False) -> dict | None:
 		"""
 		Returns the latest `AppliedConf` which affected `key` value
 
@@ -338,34 +336,6 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 		return None
 
-	def __add__(self, other):  # pragma: no cover
-		if self._strict_keys:
-			for key in other:
-				preprocessor = self._preprocessor
-				key, _ = preprocessor(key, None)
-				if key not in self._storage:
-					raise StrictKeysEnabled(
-						f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown")
-		return self.config_apply(other)
-
-	def __repr__(self):  # pragma: no cover
-		return repr(self._storage)
-
-	def __len__(self):  # pragma: no cover
-		return len(self._storage)
-
-	def __delitem__(self, key):  # pragma: no cover
-		del self._storage[key]
-
-	def __getitem__(self, key):
-		preprocessor = self._preprocessor
-		key, _ = preprocessor(key, None)
-
-		if self._strict_keys and key not in self._storage:
-			raise StrictKeysEnabled(f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown")
-
-		return self._storage.get(key)
-
 	def get(self, key: str, default: Any = None):
 		"""
 		Equivalent to `conf["my-key"]` but you can specify default if the key is not found
@@ -378,7 +348,9 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		key, _ = preprocessor(key, None)
 
 		if self._strict_keys and key not in self._storage:
-			raise StrictKeysEnabled(f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown")
+			raise StrictKeysEnabled(
+				f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown"
+			)
 
 		res = self._storage.get(key)
 		if self._return_default_on_none:
@@ -401,7 +373,9 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 				preprocessor = self._preprocessor
 				key, _ = preprocessor(key, None)
 				if key not in self._storage:
-					raise StrictKeysEnabled(f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown")
+					raise StrictKeysEnabled(
+						f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown"
+					)
 		self.config_apply(__m)
 
 	def keys(self):  # pragma: no cover
@@ -418,6 +392,56 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 	def popitem(self):  # pragma: no cover
 		raise NotPermitted("Popping from ConfigStore is not permitted due to architecture")
+
+	def __setitem__(self, key, value):
+		preprocessor = self._preprocessor
+		key, _ = preprocessor(key, None)
+
+		if self._strict_keys and key not in self._storage:
+			raise StrictKeysEnabled(
+				f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown"
+			)
+
+		frame_context = inspect.stack()[1][0]
+		frame_info = inspect.getframeinfo(frame_context)
+
+		self.config_apply(
+			{key: value},
+			f"{frame_info.function}:{frame_info.lineno}",
+			frame_info.filename,
+			ConfigStoreType.SINGLE_VALUE
+		)
+
+	def __add__(self, other):  # pragma: no cover
+		if self._strict_keys:
+			for key in other:
+				preprocessor = self._preprocessor
+				key, _ = preprocessor(key, None)
+				if key not in self._storage:
+					raise StrictKeysEnabled(
+						f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown"
+					)
+		return self.config_apply(other)
+
+	def __repr__(self):  # pragma: no cover
+		return repr(self._storage)
+
+	def __len__(self):  # pragma: no cover
+		return len(self._storage)
+
+	def __delitem__(self, key):  # pragma: no cover
+		del self._storage[key]
+
+	def __getitem__(self, key):
+		preprocessor = self._preprocessor
+		key, _ = preprocessor(key, None)
+
+		if self._strict_keys and key not in self._storage:
+			raise StrictKeysEnabled(
+				f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown"
+			)
+
+		return self._storage.get(key)
 
 	def __cmp__(self, other):  # pragma: no cover
 		return self._storage == other

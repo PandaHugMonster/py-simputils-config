@@ -10,6 +10,10 @@ class ObjConfigStorePrism:
 
     _config_store = None
 
+    @property
+    def applied_confs(self):
+        return self._config_store.applied_confs
+
     def __init__(self, config_store):
         self._config_store = config_store
 

@@ -22,7 +22,7 @@ class ConfigHub:
 	@classmethod
 	def aggregate(
 		cls,
-		*args: ConfigType | FileType,
+		*args: ConfigType | FileType | callable,
 		target: ConfigStore = None
 	) -> ConfigStore:
 		"""
@@ -39,13 +39,19 @@ class ConfigHub:
 			target = ConfigStore()
 
 		for arg in args:
+
+			if callable(arg):
+				arg = arg(target)
+				if not arg:
+					continue
+
 			if isinstance(arg, FileType):
 				target += cls.config_from_file(arg)
 			elif isinstance(arg, ConfigType):
 				target += cls.config_from_dict(arg)
 			else:
 				raise TypeError(
-					f"Unsupported data-type. ConfigStore supports only {ConfigType}"
+					f"Unsupported data-type. ConfigStore supports only {ConfigType}, {FileType} or callable"
 				)
 
 		return target

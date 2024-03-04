@@ -53,3 +53,7 @@ class BasicConfigEnum(str, Enum):
 			handler=handler,
 			return_default_on_none=return_default_on_none,
 		)
+
+	@classmethod
+	def names(cls):
+		return list(map(lambda name: name.value, cls))

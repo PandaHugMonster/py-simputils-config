@@ -16,6 +16,7 @@
   * Implemented `simputils.config.components.prisms.ObjConfigStorePrism` for `ConfigStore`.
     It allows to use "Config Object Style Access" for accessing key/value pairs through `obj` field of `ConfigStore` object.
   * And documentation for it: [Config Object Style Access](config-object-style-access.md)
+* Added `names()` class method to `simputils.config.generic.BasicConfigEnum`
 
 
 ## 1.0.5

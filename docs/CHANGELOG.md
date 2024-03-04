@@ -17,6 +17,8 @@
     It allows to use "Config Object Style Access" for accessing key/value pairs through `obj` field of `ConfigStore` object.
   * And documentation for it: [Config Object Style Access](config-object-style-access.md)
 * Added `names()` class method to `simputils.config.generic.BasicConfigEnum`
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/25
+  *
 
 
 ## 1.0.5

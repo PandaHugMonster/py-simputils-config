@@ -53,13 +53,14 @@ Exception is only if there is a bug, that gets fixed.
 
 ----
 
-When working with files, keep in mind that the only supported files are `.yml`, `.env` and `.json`.
-If you need support for other types, you will have to implement your custom handler for those file-types.
+When working with files, keep in mind that the only supported files are `.yml`/`.yaml`, `.env` and `.json`.
+If you need support for other types, you will have to implement your custom handler(s) for those file-types.
 
 ## Documentation
 * [Changelog](docs/CHANGELOG.md) - Please make sure you check it for new features and changes
 * [The overall example](docs/overall-example.md)
 * [Working with enums and annotations](docs/working-with-enums-and-annotations.md)
+* [Config Object Style Access](docs/config-object-style-access.md)
 * [Preprocessing and filtering](docs/preprocessing-and-filtering.md)
 * [Working with `ConfigHub`](docs/working-with-config-hub.md)
   (Quick Start, recommended way to work with the configs)

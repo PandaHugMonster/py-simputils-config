@@ -7,7 +7,7 @@ class BasicConditional(metaclass=ABCMeta):
 
     @abstractmethod
     def condition(self, target: ConfigStore):
-        pass
+        pass  # pragma: no cover
 
     def __call__(self, target: ConfigStore, *args, **kwargs):
         return self.condition(target)

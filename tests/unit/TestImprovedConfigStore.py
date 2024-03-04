@@ -1,4 +1,5 @@
 from simputils.config.components import ConfigHub
+from simputils.config.components.prisms import ObjConfigStorePrism
 from simputils.config.generic import BasicConfigEnum
 from simputils.config.generic.BasicConditional import BasicConditional
 from simputils.config.models import ConfigStore
@@ -96,3 +97,34 @@ class TestImprovedConfigStore:
             )
         )
         assert conf[MyConfigEnum.VAL2] < 34 and conf[MyConfigEnum.VAL1] == "Test"
+
+    def test_obj_prism_for_config_store(self):
+
+        class MyConfigEnum(BasicConfigEnum):
+            VAL1 = "val1"
+            VAL2 = "val2"
+            VAL3 = "val3"
+
+        class _Hints(ObjConfigStorePrism):
+            val1: str = ...
+            val2: int = ...
+            val3: bool = ...
+
+        MyConfigType = type[_Hints]
+
+        conf: MyConfigType = ConfigHub.aggregate(
+            {
+                MyConfigEnum.VAL1: "test",
+                MyConfigEnum.VAL2: 34,
+                MyConfigEnum.VAL3: True,
+            },
+            target=ConfigStore(
+                MyConfigEnum,
+                strict_keys=True,
+            ),
+        ).obj
+
+        for key in MyConfigEnum.names():
+            val_from_obj = getattr(conf, key)
+            val_from_dict = conf[key]
+            assert val_from_obj == val_from_dict

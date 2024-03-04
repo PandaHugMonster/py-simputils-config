@@ -24,7 +24,7 @@ class ConfigHub:
 		cls,
 		*args: ConfigType | FileType | callable,
 		target: ConfigStore = None
-	) -> ConfigStore:
+	) -> "ConfigStore | any":
 		"""
 		Aggregate configs from multiple sources.
 

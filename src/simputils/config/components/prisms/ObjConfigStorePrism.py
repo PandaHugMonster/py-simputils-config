@@ -6,9 +6,14 @@ from simputils.config.enums import ConfigStoreType
 from simputils.config.exceptions import StrictKeysEnabled
 
 
-class ObjConfigStorePrism:
+class ObjConfigStorePrism:  # pragma: no cover
+    # MARK  No Cover might be temporary here
 
     _config_store = None
+
+    @property
+    def applied_confs(self):
+        return self._config_store.applied_confs
 
     def __init__(self, config_store):
         self._config_store = config_store

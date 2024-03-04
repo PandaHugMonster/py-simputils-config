@@ -12,6 +12,11 @@
   * Implemented "Conditional Config", callables for `ConfigHub.aggregate()`
     * Documentation can be found here: [Working with ConfigHub](working-with-config-hub.md#conditional-config)
     * Simple support for `ExecEnv` aka "Stage" through "Conditional Config"
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/20
+  * Implemented `simputils.config.components.prisms.ObjConfigStorePrism` for `ConfigStore`.
+    It allows to use "Config Object Style Access" for accessing key/value pairs through `obj` field of `ConfigStore` object.
+  * And documentation for it: [Config Object Style Access](config-object-style-access.md)
+* Added `names()` class method to `simputils.config.generic.BasicConfigEnum`
 
 
 ## 1.0.5

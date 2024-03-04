@@ -2,11 +2,16 @@
 
 ## 1.1.0
 * Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/21
-  * Implement flag and functionality for strict set of keys
+  * Implemented flag and functionality for strict set of keys
     * If enabled, and unknown key is accessed the `simputils.config.exceptions.StrictKeysEnabled` exception
       is raised
   * Fixed a small bug with some minimal preprocessing when getting value by the "key". 
     Now all the provided keys are passing the `preprocessor` to conform with the rules.
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/29
+  * Added document [Working with ConfigHub](working-with-config-hub.md)
+  * Implemented "Conditional Config", callables for `ConfigHub.aggregate()`
+    * Documentation can be found here: [Working with ConfigHub](working-with-config-hub.md#conditional-config)
+    * Simple support for `ExecEnv` aka "Stage" through "Conditional Config"
 
 
 ## 1.0.5
@@ -59,7 +64,7 @@
 * Extracted basic fields from `simputils.config.models.AppliedConf` to 
   `simputils.config.generic.BasicAppliedConf` in fully backward-compatible way
 * Improved some of `simputils.config.generic.BasicConfigStore` functionality
-* Added `ARGPARSER_NAMESPACE` key to `src.simputils.config.enums.ConfigStoreType`
+* Added `ARGPARSER_NAMESPACE` key to `simputils.config.enums.ConfigStoreType`
 * Some general code cleanups and code format improvement
 * Improved some documentation [../README.md](../README.md)
 * `Enum` support added:

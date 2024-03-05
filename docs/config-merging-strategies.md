@@ -60,6 +60,13 @@ Both predefined `string` name or instance of
 `simputils.config.generic.BasicMergingStrategy` and it's derivatives can be supplied 
 to `strategy` argument. 
 
+> [!NOTE]
+> `preprocessor` and `filter` functionality for `ConfigStore` applied only on Level 1 
+> of a strategy, and do not do anything with any internal structure. 
+> 
+> In case you need that, you have to implement your very custom `preprocessor` or `filter` to
+> accommodate such functionality (and go through all the structures necessary).
+
 
 ## Flat Strategy
 

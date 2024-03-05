@@ -247,15 +247,20 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 		return filter
 
+	# noinspection PyShadowingBuiltins
 	def _apply_data(self, config: ConfigType, preprocessor: Callable, filter: Callable):
+		# MARK	Strategy top level Here!
 		applied_keys = []
-
 		for key, val in dict(config).items():
 			key, val = preprocessor(key, val)
 			if filter(key, val):
 				applied_keys.append(key)
+				# MARK	Strategy value level Here!
 				self._storage[key] = val
+				###
+		###
 
+		# MARK	Can be optimized with help of `applied_keys`
 		if not self._initial_preprocessed_keys and config is not None:
 			for key in dict(config).keys():
 				key, _ = preprocessor(key, None)

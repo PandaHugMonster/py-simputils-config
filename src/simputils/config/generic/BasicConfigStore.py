@@ -13,7 +13,7 @@ from simputils.config.base import get_enum_defaults, get_enum_all_annotations
 from simputils.config.components.prisms import ObjConfigStorePrism
 from simputils.config.enums import ConfigStoreType
 from simputils.config.exceptions import NotPermitted, StrictKeysEnabled
-from simputils.config.generic import BasicAppliedConf
+from simputils.config.generic import BasicAppliedConf, BasicMergingStrategy
 from simputils.config.types import ConfigType, PreProcessorType, FilterType, SourceType, HandlerType
 
 _type_func = type
@@ -21,6 +21,8 @@ _type_func = type
 
 # noinspection PyMissingConstructor
 class BasicConfigStore(dict, metaclass=ABCMeta):
+
+	STRATEGY_FLAT = "flat"
 
 	_op_class = None
 	_return_default_on_none: bool = True
@@ -34,6 +36,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 	_applied_conf_class = None
 	_initial_preprocessed_keys: list[str] = None
 	_strict_keys: bool = False
+	_strategy: str | BasicMergingStrategy = None
 
 	_handler: HandlerType = None
 	"""Handler is just a reference, it is not being called from within ConfigStore"""
@@ -76,6 +79,10 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		return self._applied_confs
 
 	@property
+	def strategy(self):
+		return self._strategy
+
+	@property
 	def return_default_on_none(self) -> bool:  # pragma: no cover
 		"""
 		If set to True and `get()` method is used with `default` param supplied,
@@ -89,6 +96,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		"""
 		return self._return_default_on_none
 
+	# noinspection PyShadowingBuiltins
 	def __init__(
 		self,
 		values: ConfigType = None,
@@ -100,6 +108,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		handler: HandlerType = None,
 		return_default_on_none: bool = True,
 		strict_keys: bool = False,
+		strategy: str | BasicMergingStrategy = STRATEGY_FLAT,
 	):
 		self._applied_confs = []
 		self._storage = {}
@@ -107,6 +116,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		self._strict_keys = strict_keys
 		self._return_default_on_none = return_default_on_none
 		self._applied_conf_class = self.applied_conf_class()
+		self._strategy = strategy
 
 		values, self._name, self._source, self._type, self._handler = self._prepare_supported_types(
 			values,

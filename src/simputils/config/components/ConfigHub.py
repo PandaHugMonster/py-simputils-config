@@ -39,20 +39,27 @@ class ConfigHub:
 			target = ConfigStore()
 
 		for arg in args:
-
 			if callable(arg):
+				# NOTE	Processing callable source
 				arg = arg(target)
 				if not arg:
 					continue
 
-			if isinstance(arg, FileType):
-				target += cls.config_from_file(arg)
-			elif isinstance(arg, ConfigType):
-				target += cls.config_from_dict(arg)
-			else:
-				raise TypeError(
-					f"Unsupported data-type. ConfigStore supports only {ConfigType}, {FileType} or callable"
-				)
+			target = cls._fill_up_target(target, arg)
+
+		return target
+
+	@classmethod
+	def _fill_up_target(cls, target, arg):
+
+		if isinstance(arg, FileType):
+			target += cls.config_from_file(arg)
+		elif isinstance(arg, ConfigType):
+			target += cls.config_from_dict(arg)
+		else:
+			raise TypeError(
+				f"Unsupported data-type. ConfigStore supports only {ConfigType}, {FileType} or callable"
+			)
 
 		return target
 
@@ -113,6 +120,15 @@ class ConfigHub:
 		if not available_handlers:
 			raise NoAvailableHandlers("No file handlers specified")
 
+		is_handled, target = cls._handle(available_handlers, file, target, name, source, type)
+
+		if not cls.skip_files_with_missing_handler and not is_handled:
+			raise NoHandler(f"No handler for {file} is found")
+
+		return target
+
+	@classmethod
+	def _handle(cls, available_handlers, file, target, name, source, type):
 		is_handled = False
 		for h in available_handlers:
 			sub_res: ConfigStore | None = h(file)
@@ -126,7 +142,4 @@ class ConfigHub:
 
 				break
 
-		if not cls.skip_files_with_missing_handler and not is_handled:
-			raise NoHandler(f"No handler for {file} is found")
-
-		return target
+		return is_handled, target

@@ -1,3 +1,4 @@
+import importlib.util
 import inspect
 from abc import ABCMeta, abstractmethod
 from argparse import Namespace
@@ -7,7 +8,6 @@ from enum import Enum
 from os import _Environ
 from typing import Any, Callable, get_args
 
-from pydantic import BaseModel
 from typing_extensions import Self
 
 from simputils.config.base import get_enum_defaults, get_enum_all_annotations
@@ -40,6 +40,8 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 	"""Handler is just a reference, it is not being called from within ConfigStore"""
 
 	_obj_prism: ObjConfigStorePrism = None
+
+	_pydantic_base_model_class = None
 
 	@classmethod
 	@abstractmethod
@@ -90,6 +92,14 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		"""
 		return self._return_default_on_none
 
+	_is_pydantic_enabled: bool = True
+
+	@classmethod
+	def _set_pydantic_enabled(cls, val: bool):
+		if val is False:
+			cls._pydantic_base_model_class = None
+		cls._is_pydantic_enabled = val
+
 	def __init__(
 		self,
 		values: ConfigType = None,
@@ -102,6 +112,9 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		return_default_on_none: bool = True,
 		strict_keys: bool = False,
 	):
+		if self._is_pydantic_enabled:
+			self._pydantic_setup()
+
 		self._applied_confs = []
 		self._storage = {}
 		self._initial_preprocessed_keys = []
@@ -129,10 +142,23 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 			self._handler
 		)
 
+	@classmethod
+	def _pydantic_setup(cls):
+		try:
+			if not cls._pydantic_base_model_class:
+				pydantic_namespace = importlib.util.find_spec("pydantic")
+				if pydantic_namespace:
+					cls._pydantic_base_model_class = getattr(
+						importlib.import_module("pydantic"),
+						"BaseModel"
+					)
+		except (ModuleNotFoundError, AttributeError):  # pragma: no cover
+			pass
+
 	def __val_or_val(self, val1: Any | None, val2: Any | None):
 		return val2 if val1 is None else val1
 
-	def _prepare_supported_types(
+	def _prepare_supported_types(  # noqa (The complexity here is necessary)
 		self,
 		values,
 		name: str = None,
@@ -185,33 +211,47 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		# NOTE  Returning key and val intact
 		return key, val
 
+	def _get_prepare_pp_for_dict(self, preprocessor_data):
+		def _wrapper(k, v):
+			return self._key_replace_callback(preprocessor_data, k, v)
+		return _wrapper
+
+	def _get_prepare_pp_for_list(self, callable_list):
+		def _wrapper(k, v):
+			for cbk in callable_list:
+				k, v = cbk(k, v)
+			return k, v
+		return _wrapper
+
+	def _get_prepare_pp_for_non_callable(self):
+		def _wrapper(k, v):
+			return k, v
+		return _wrapper
+
 	def _prepare_preprocessor(self, preprocessor):
 
 		if isinstance(preprocessor, dict):
-			_preprocessor_data = preprocessor
-
-			def _wrapper(k, v):
-				return self._key_replace_callback(_preprocessor_data, k, v)
-
-			preprocessor = _wrapper
+			preprocessor = self._get_prepare_pp_for_dict(preprocessor)
 		elif isinstance(preprocessor, (tuple, list)):
-			_callable_list = preprocessor
-
-			def _wrapper(k, v):
-				for cbk in _callable_list:
-					k, v = cbk(k, v)
-				return k, v
-
-			preprocessor = _wrapper
+			preprocessor = self._get_prepare_pp_for_list(preprocessor)
 		elif not callable(preprocessor):
-
-			def _wrapper(k, v):
-				return k, v
-
-			preprocessor = _wrapper
+			preprocessor = self._get_prepare_pp_for_non_callable()
 
 		return preprocessor
 
+	def _get_prepare_filter_wrapper(self, filter, preprocessor):
+		def _wrapper(key: str, val: Any):
+			key, _ = preprocessor(key, val)
+			if not filter:
+				return True
+			for filter_key in filter:
+				filter_key, _ = preprocessor(filter_key, None)
+				if filter_key == key:
+					return True
+			return False
+		return _wrapper
+
+	# noinspection PyShadowingBuiltins
 	def _prepare_filter(self, filter: FilterType, preprocessor: Callable):
 		_filter = filter
 		if isinstance(filter, Iterable) or filter is True:
@@ -219,17 +259,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 			# NOTE  In case if filter is set to True
 			_filter = self._initial_preprocessed_keys if _filter is True else _filter
 
-			def _wrapper(key: str, val: Any):
-				key, _ = preprocessor(key, val)
-				if not _filter:
-					return True
-				for filter_key in _filter:
-					filter_key, _ = preprocessor(filter_key, None)
-					if filter_key == key:
-						return True
-				return False
-
-			filter = _wrapper
+			filter = self._get_prepare_filter_wrapper(_filter, preprocessor)
 
 		elif not callable(filter):
 			def _wrapper(key: str, val: Any):
@@ -274,6 +304,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		:param handler:
 		:return:
 		"""
+
 		if not config:  # pragma: no cover
 			return self
 
@@ -283,48 +314,14 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 		config, name, source, type, handler = self._prepare_supported_types(config, name, source, type, handler)
 
-		if not self.applied_confs:
-			if inspect.isclass(config) and issubclass(config, Enum) and issubclass(config, str):
-				self._op_class = config
+		if not self.applied_confs and inspect.isclass(config) and issubclass(config, Enum) and issubclass(config, str):
+			self._op_class = config
 
-		if config:
-			if inspect.isclass(config) and issubclass(config, Enum) and issubclass(config, str):
-				config = get_enum_defaults(self._op_class)
+		if config and inspect.isclass(config) and issubclass(config, Enum) and issubclass(config, str):
+			config = get_enum_defaults(self._op_class)
 
 		if self._op_class and issubclass(self._op_class, Enum) and issubclass(self._op_class, str):
-			annotations = get_enum_all_annotations(self._op_class)
-			for key, val in config.items():
-				if key not in annotations:
-					continue
-				annotated_data = annotations[key].data
-
-				_check = annotated_data and \
-					"type" in annotated_data and \
-					annotated_data["type"]
-
-				if _check:
-					whether_union = get_args(annotated_data["type"])
-					if whether_union:
-						for subtype in whether_union:
-							if val is None:
-								if subtype is None:
-									config[key] = val
-									break
-							elif callable(subtype):
-								# noinspection PyTypeChecker
-								if val and issubclass(subtype, BaseModel):
-									config[key] = subtype(**val)
-								else:
-									config[key] = subtype(val)
-								break
-					else:
-						subtype = annotated_data["type"]
-						if callable(subtype):
-							# noinspection PyTypeChecker
-							if val and issubclass(subtype, BaseModel):
-								config[key] = subtype(**val)
-							else:
-								config[key] = subtype(val)
+			config = self._process_str_enum(config)
 
 		applied_keys = self._apply_data(config, self._preprocessor, self._filter)
 
@@ -339,6 +336,36 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 			)
 		)
 		return self
+
+	def _process_str_enum(self, config):
+		annotations = get_enum_all_annotations(self._op_class)
+		for key, val in config.items():
+			if key not in annotations:
+				continue
+			annotated_data = annotations[key].data
+
+			if annotated_data and "type" in annotated_data and annotated_data["type"]:
+				like_union = get_args(annotated_data["type"])
+				if not like_union:
+					like_union = (annotated_data["type"],)
+
+				self._process_union_subtypes(config, like_union, key, val)
+
+		return config
+
+	def _process_union_subtypes(self, config, like_union, key, val):
+		pydantic_base_model_class = self._pydantic_base_model_class
+		for subtype in like_union:
+			if val is None:
+				config[key] = val
+				break
+			elif callable(subtype):
+				# noinspection PyTypeChecker
+				if pydantic_base_model_class and issubclass(subtype, pydantic_base_model_class):
+					config[key] = subtype(**val)
+				else:
+					config[key] = subtype(val)
+				break
 
 	def applied_from(self, key: str, include_unprocessed_keys: bool = False) -> dict | None:
 		"""

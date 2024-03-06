@@ -28,7 +28,9 @@
     * Documentation can be found here: [Pydantic Integration](pydantic-integration.md)
   * Implemented proper `type` processing of union types for Config Enum annotations
 * Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/25
-  *
+  * Prepared documentation and schemes for all strategies: [Config Merging Strategies](config-merging-strategies.md)
+  * 
+    
 
 
 ## 1.0.5

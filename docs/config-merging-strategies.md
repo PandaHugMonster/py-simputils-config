@@ -70,6 +70,8 @@ to `strategy` argument.
 
 ## Flat Strategy
 
+![merging-strategies-Flat Strategy.drawio.png](schemes/images/merging-strategies-Flat Strategy.drawio.png)
+
 This strategy simply replaces the values on a level 1 
 with new values from level 1 of the merging config (if exists in the incoming config).
 
@@ -88,3 +90,12 @@ It might look counterintuitive, though that design was done consciously.
 > even if it's "Flat Strategy" which is default one!
 
 
+## Multidimensional Strategies
+
+### Multidimensional Replace Strategy
+
+![merging-strategies-Multidimensional Replace Strategy.drawio.png](schemes/images/merging-strategies-Multidimensional Replace Strategy.drawio.png)
+
+### Multidimensional Extend Strategy
+
+![merging-strategies-Multidimensional Extend Strategy.drawio.png](schemes/images/merging-strategies-Multidimensional Extend Strategy.drawio.png)

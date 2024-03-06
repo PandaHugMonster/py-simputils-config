@@ -8,8 +8,6 @@ from enum import Enum
 from os import _Environ
 from typing import Any, Callable, get_args
 
-from typing_extensions import Self
-
 from simputils.config.base import get_enum_defaults, get_enum_all_annotations
 from simputils.config.components.prisms import ObjConfigStorePrism
 from simputils.config.enums import ConfigStoreType
@@ -306,7 +304,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		source: SourceType = None,
 		type: str = None,
 		handler: HandlerType = None,
-	) -> Self:
+	):
 		"""
 		Setting values to the object that could be accessed dict-like style
 

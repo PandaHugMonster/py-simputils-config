@@ -5,6 +5,7 @@
 * Added `names()` class method to `simputils.config.generic.BasicConfigEnum`
 * Decreased acceptable Cyclomatic Complexity level 
   from 10 to 5 in the project (for better code quality control)
+* Removed unnecessary dependency of `typing_extensions`
 * Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/21
   * Implemented flag and functionality for strict set of keys
     * If enabled, and unknown key is accessed the `simputils.config.exceptions.StrictKeysEnabled` exception

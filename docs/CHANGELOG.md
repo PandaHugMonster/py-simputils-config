@@ -1,6 +1,10 @@
 # Changelog
 
 ## 1.1.0
+
+* Added `names()` class method to `simputils.config.generic.BasicConfigEnum`
+* Decreased acceptable Cyclomatic Complexity level 
+  from 10 to 5 in the project (for better code quality control)
 * Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/21
   * Implemented flag and functionality for strict set of keys
     * If enabled, and unknown key is accessed the `simputils.config.exceptions.StrictKeysEnabled` exception
@@ -16,7 +20,12 @@
   * Implemented `simputils.config.components.prisms.ObjConfigStorePrism` for `ConfigStore`.
     It allows to use "Config Object Style Access" for accessing key/value pairs through `obj` field of `ConfigStore` object.
   * And documentation for it: [Config Object Style Access](config-object-style-access.md)
-* Added `names()` class method to `simputils.config.generic.BasicConfigEnum`
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/32
+  * Improved compatibility with [pydantic](https://docs.pydantic.dev/latest/) models
+    * Now pydantic models can be used as `type` for Enum Config annotations, then the structures
+      will be converted accordingly. Useful especially with "Config Object Style Access" aka `ConfigStore.obj`
+    * Documentation can be found here: [Pydantic Integration](pydantic-integration.md)
+  * Implemented proper `type` processing of union types for Config Enum annotations
 * Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/25
   *
 

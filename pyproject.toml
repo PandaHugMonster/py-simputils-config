@@ -41,6 +41,9 @@ dev = [
     "pytest-cov",
     "flake8"
 ]
+pydantic = [
+    "pydantic"
+]
 
 [project.urls]
 Homepage = "https://github.com/PandaHugMonster/py-simputils-config"

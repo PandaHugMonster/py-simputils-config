@@ -5,8 +5,9 @@ from collections.abc import Iterable
 from enum import Enum
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from os import _Environ
-from typing import Any, Callable
+from typing import Any, Callable, get_args
 
+from pydantic import BaseModel
 from typing_extensions import Self
 
 from simputils.config.base import get_enum_defaults, get_enum_all_annotations
@@ -299,12 +300,31 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 				_check = annotated_data and \
 					"type" in annotated_data and \
-					annotated_data["type"] \
-					and isinstance(annotated_data["type"], Callable)
+					annotated_data["type"]
 
 				if _check:
-					annotated_type = annotated_data["type"]
-					config[key] = annotated_type(val)
+					whether_union = get_args(annotated_data["type"])
+					if whether_union:
+						for subtype in whether_union:
+							if val is None:
+								if subtype is None:
+									config[key] = val
+									break
+							elif callable(subtype):
+								# noinspection PyTypeChecker
+								if val and issubclass(subtype, BaseModel):
+									config[key] = subtype(**val)
+								else:
+									config[key] = subtype(val)
+								break
+					else:
+						subtype = annotated_data["type"]
+						if callable(subtype):
+							# noinspection PyTypeChecker
+							if val and issubclass(subtype, BaseModel):
+								config[key] = subtype(**val)
+							else:
+								config[key] = subtype(val)
 
 		applied_keys = self._apply_data(config, self._preprocessor, self._filter)
 

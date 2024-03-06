@@ -39,7 +39,8 @@ include = ["simputils.config"]
 dev = [
     "pytest",
     "pytest-cov",
-    "flake8"
+    "flake8",
+    "pydantic"
 ]
 
 [project.urls]

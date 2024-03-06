@@ -7,5 +7,5 @@ exclude =
     __init__.py,
     build,
     dist
-max-complexity = 10
+max-complexity = 5
 doctests = True

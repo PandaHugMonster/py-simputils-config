@@ -29,7 +29,9 @@
   * Implemented proper `type` processing of union types for Config Enum annotations
 * Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/25
   * Prepared documentation and schemes for all strategies: [Config Merging Strategies](config-merging-strategies.md)
-  * 
+  * Polished the concept of Merging Strategies (see schemes in [schemes/images](schemes/images))
+  * Implemented general Merging Strategies infrastructure
+  * "Implemented" Flat Strategy (teeny-tiny class of couple lines)
     
 
 

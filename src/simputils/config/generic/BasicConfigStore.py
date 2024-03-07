@@ -10,7 +10,8 @@ from typing import Any, Callable, get_args
 
 from simputils.config.base import get_enum_defaults, get_enum_all_annotations
 from simputils.config.components.prisms import ObjConfigStorePrism
-from simputils.config.enums import ConfigStoreType
+from simputils.config.components.strategies import FlatMergingStrategy
+from simputils.config.enums import ConfigStoreType, MergingStrategiesEnum
 from simputils.config.exceptions import NotPermitted, StrictKeysEnabled
 from simputils.config.generic import BasicAppliedConf, BasicMergingStrategy
 from simputils.config.types import ConfigType, PreProcessorType, FilterType, SourceType, HandlerType
@@ -20,8 +21,6 @@ _type_func = type
 
 # noinspection PyMissingConstructor
 class BasicConfigStore(dict, metaclass=ABCMeta):
-
-	STRATEGY_FLAT = "flat"
 
 	_op_class = None
 	_return_default_on_none: bool = True
@@ -80,7 +79,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		return self._applied_confs
 
 	@property
-	def strategy(self):
+	def strategy(self):  # pragma: no cover
 		return self._strategy
 
 	@property
@@ -117,7 +116,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		handler: HandlerType = None,
 		return_default_on_none: bool = True,
 		strict_keys: bool = False,
-		strategy: str | BasicMergingStrategy = STRATEGY_FLAT,
+		strategy: str | BasicMergingStrategy = MergingStrategiesEnum.FLAT,
 	):
 		if self._is_pydantic_enabled:
 			self._pydantic_setup()
@@ -128,7 +127,8 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		self._strict_keys = strict_keys
 		self._return_default_on_none = return_default_on_none
 		self._applied_conf_class = self.applied_conf_class()
-		self._strategy = strategy
+
+		self._prepare_strategy(strategy)
 
 		values, self._name, self._source, self._type, self._handler = self._prepare_supported_types(
 			values,
@@ -149,6 +149,12 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 			self._type,
 			self._handler
 		)
+
+	def _prepare_strategy(self, strategy):
+		if isinstance(strategy, BasicMergingStrategy):
+			self._strategy = strategy
+		elif strategy == MergingStrategiesEnum.FLAT:
+			self._strategy = FlatMergingStrategy()
 
 	@classmethod
 	def _pydantic_setup(cls):
@@ -278,16 +284,9 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 	# noinspection PyShadowingBuiltins
 	def _apply_data(self, config: ConfigType, preprocessor: Callable, filter: Callable):
-		# MARK	Strategy top level Here!
-		applied_keys = []
-		for key, val in dict(config).items():
-			key, val = preprocessor(key, val)
-			if filter(key, val):
-				applied_keys.append(key)
-				# MARK	Strategy value level Here!
-				self._storage[key] = val
-				###
-		###
+		storage_result, applied_keys = self._strategy.apply_data(config, preprocessor, filter)
+		for key, val in storage_result.items():
+			self._storage[key] = val
 
 		# MARK	Can be optimized with help of `applied_keys`
 		if not self._initial_preprocessed_keys and config is not None:

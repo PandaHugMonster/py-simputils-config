@@ -11,9 +11,6 @@ There are 3 strategies:
 * Multidimensional Replace Strategy
 * Multidimensional Extend Strategy
 
-> [!IMPORTANT]
-> Any strategy but **flat** one could be resource expensive, and even lead to dead loops
-
 Only the strategy specified to the target `ConfigStore` (the one, into which others are merged).
 
 **Always consider order of precedence of merging `ConfigStore` objects!**
@@ -64,7 +61,7 @@ to `strategy` argument.
 > `preprocessor` and `filter` functionality for `ConfigStore` applied only on Level 1 
 > of a strategy, and do not do anything with any internal structure. 
 > 
-> In case you need that, you have to implement your very custom `preprocessor` or `filter` to
+> In case you need that, you have to implement your very own custom `preprocessor` or `filter` to
 > accommodate such functionality (and go through all the structures necessary).
 
 
@@ -91,6 +88,15 @@ It might look counterintuitive, though that design was done consciously.
 
 
 ## Multidimensional Strategies
+
+> [!IMPORTANT]
+> The multidimensional strategies will work as displayed only
+> if the structures of target and incoming configs are the same.
+> 
+> **If the structures are different, the incompatible types of target one will be replaced with the incoming ones!**
+
+> [!IMPORTANT]
+> All the multidimensional strategies could be resource expensive, and even lead to dead loops!
 
 ### Multidimensional Replace Strategy
 

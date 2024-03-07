@@ -1,0 +1,1 @@
+from .FlatMergingStrategy import FlatMergingStrategy

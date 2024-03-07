@@ -1,1 +1,2 @@
 from .ConfigStoreType import ConfigStoreType
+from .MergingStrategiesEnum import MergingStrategiesEnum

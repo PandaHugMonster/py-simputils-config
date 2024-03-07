@@ -1,6 +1,5 @@
 import inspect
-
-from typing_extensions import Any
+from typing import Any
 
 from simputils.config.enums import ConfigStoreType
 from simputils.config.exceptions import StrictKeysEnabled

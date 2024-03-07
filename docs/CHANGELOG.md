@@ -5,6 +5,7 @@
 * Added `names()` class method to `simputils.config.generic.BasicConfigEnum`
 * Decreased acceptable Cyclomatic Complexity level 
   from 10 to 5 in the project (for better code quality control)
+* Removed unnecessary dependency of `typing_extensions`
 * Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/21
   * Implemented flag and functionality for strict set of keys
     * If enabled, and unknown key is accessed the `simputils.config.exceptions.StrictKeysEnabled` exception
@@ -26,6 +27,12 @@
       will be converted accordingly. Useful especially with "Config Object Style Access" aka `ConfigStore.obj`
     * Documentation can be found here: [Pydantic Integration](pydantic-integration.md)
   * Implemented proper `type` processing of union types for Config Enum annotations
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/25
+  * Prepared documentation and schemes for all strategies: [Config Merging Strategies](config-merging-strategies.md)
+  * Polished the concept of Merging Strategies (see schemes in [schemes/images](schemes/images))
+  * Implemented general Merging Strategies infrastructure
+  * "Implemented" Flat Strategy (teeny-tiny class of couple lines)
+    
 
 
 ## 1.0.5

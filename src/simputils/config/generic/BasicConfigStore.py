@@ -8,13 +8,12 @@ from enum import Enum
 from os import _Environ
 from typing import Any, Callable, get_args
 
-from typing_extensions import Self
-
 from simputils.config.base import get_enum_defaults, get_enum_all_annotations
 from simputils.config.components.prisms import ObjConfigStorePrism
-from simputils.config.enums import ConfigStoreType
+from simputils.config.components.strategies import FlatMergingStrategy
+from simputils.config.enums import ConfigStoreType, MergingStrategiesEnum
 from simputils.config.exceptions import NotPermitted, StrictKeysEnabled
-from simputils.config.generic import BasicAppliedConf
+from simputils.config.generic import BasicAppliedConf, BasicMergingStrategy
 from simputils.config.types import ConfigType, PreProcessorType, FilterType, SourceType, HandlerType
 
 _type_func = type
@@ -35,6 +34,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 	_applied_conf_class = None
 	_initial_preprocessed_keys: list[str] = None
 	_strict_keys: bool = False
+	_strategy: str | BasicMergingStrategy = None
 
 	_handler: HandlerType = None
 	"""Handler is just a reference, it is not being called from within ConfigStore"""
@@ -79,6 +79,10 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		return self._applied_confs
 
 	@property
+	def strategy(self):  # pragma: no cover
+		return self._strategy
+
+	@property
 	def return_default_on_none(self) -> bool:  # pragma: no cover
 		"""
 		If set to True and `get()` method is used with `default` param supplied,
@@ -100,6 +104,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 			cls._pydantic_base_model_class = None
 		cls._is_pydantic_enabled = val
 
+	# noinspection PyShadowingBuiltins
 	def __init__(
 		self,
 		values: ConfigType = None,
@@ -111,6 +116,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		handler: HandlerType = None,
 		return_default_on_none: bool = True,
 		strict_keys: bool = False,
+		strategy: str | BasicMergingStrategy = MergingStrategiesEnum.FLAT,
 	):
 		if self._is_pydantic_enabled:
 			self._pydantic_setup()
@@ -121,6 +127,8 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		self._strict_keys = strict_keys
 		self._return_default_on_none = return_default_on_none
 		self._applied_conf_class = self.applied_conf_class()
+
+		self._prepare_strategy(strategy)
 
 		values, self._name, self._source, self._type, self._handler = self._prepare_supported_types(
 			values,
@@ -141,6 +149,12 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 			self._type,
 			self._handler
 		)
+
+	def _prepare_strategy(self, strategy):
+		if isinstance(strategy, BasicMergingStrategy):
+			self._strategy = strategy
+		elif strategy == MergingStrategiesEnum.FLAT:
+			self._strategy = FlatMergingStrategy()
 
 	@classmethod
 	def _pydantic_setup(cls):
@@ -268,15 +282,13 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 		return filter
 
+	# noinspection PyShadowingBuiltins
 	def _apply_data(self, config: ConfigType, preprocessor: Callable, filter: Callable):
-		applied_keys = []
+		storage_result, applied_keys = self._strategy.apply_data(config, preprocessor, filter)
+		for key, val in storage_result.items():
+			self._storage[key] = val
 
-		for key, val in dict(config).items():
-			key, val = preprocessor(key, val)
-			if filter(key, val):
-				applied_keys.append(key)
-				self._storage[key] = val
-
+		# MARK	Can be optimized with help of `applied_keys`
 		if not self._initial_preprocessed_keys and config is not None:
 			for key in dict(config).keys():
 				key, _ = preprocessor(key, None)
@@ -291,7 +303,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		source: SourceType = None,
 		type: str = None,
 		handler: HandlerType = None,
-	) -> Self:
+	):
 		"""
 		Setting values to the object that could be accessed dict-like style
 

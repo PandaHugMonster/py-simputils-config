@@ -14,9 +14,7 @@ class BasicMergingStrategy(metaclass=ABCMeta):
             key, val = preprocessor(key, val)
             if filter(key, val):
                 applied_keys.append(key)
-                # MARK	Strategy value level Here!
                 storage_result[key] = self.merge(key, storage_result.get(key), val)
-                ###
 
         return storage_result, applied_keys
 

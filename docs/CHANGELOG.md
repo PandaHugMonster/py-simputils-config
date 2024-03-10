@@ -32,6 +32,11 @@
   * Polished the concept of Merging Strategies (see schemes in [schemes/images](schemes/images))
   * Implemented general Merging Strategies infrastructure
   * "Implemented" Flat Strategy (teeny-tiny class of couple lines)
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/23
+  * Implemented
+  * Multidimensional Strategy of "replace" and "extend" were
+    renamed in favour of "Recursive Merging Strategy"
+  * 
     
 
 

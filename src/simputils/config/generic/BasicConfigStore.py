@@ -151,13 +151,20 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		)
 
 	def _prepare_strategy(self, strategy):
-		# MARK  Improve this one, structure is suboptimal
+		strategies_group = {
+			MergingStrategiesEnum.FLAT: MergingStrategyFlat,
+			MergingStrategiesEnum.RECURSIVE: MergingStrategyRecursive,
+		}
+
 		if isinstance(strategy, BasicMergingStrategy):
 			self._strategy = strategy
-		elif strategy == MergingStrategiesEnum.FLAT:
-			self._strategy = MergingStrategyFlat()
-		elif strategy == MergingStrategiesEnum.RECURSIVE:
-			self._strategy = MergingStrategyRecursive()
+		else:
+			strategy_class = strategies_group[MergingStrategiesEnum.FLAT]
+
+			if strategy in strategies_group:
+				strategy_class = strategies_group[strategy]
+
+			self._strategy = strategy_class()
 
 	@classmethod
 	def _pydantic_setup(cls):
@@ -377,7 +384,11 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 			elif callable(subtype):
 				# noinspection PyTypeChecker
 				if pydantic_base_model_class and issubclass(subtype, pydantic_base_model_class):
-					config[key] = subtype(**val)
+					# noinspection PyTypeChecker
+					if isinstance(val, subtype):
+						config[key] = val
+					else:
+						config[key] = subtype(**val)
 				else:
 					config[key] = subtype(val)
 				break

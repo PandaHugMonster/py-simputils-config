@@ -36,11 +36,6 @@ class MergingStrategyRecursive(BasicMergingStrategy):
 		if check:
 			return True
 
-		check = (isinstance(val_target, (dict, object)) and not isinstance(val_incoming, (dict, object))) or \
-			(not isinstance(val_target, (dict, object)) and isinstance(val_incoming, (dict, object)))
-		if check:
-			return True
-
 		return False
 
 	def merge(self, key, val_target, val_incoming):
@@ -56,7 +51,7 @@ class MergingStrategyRecursive(BasicMergingStrategy):
 			#       basically any inconsistency, then the whole value is used of val_incoming
 			return val_incoming
 
-		if isinstance(val_target, list) or isinstance(val_incoming, list):
+		if isinstance(val_target, (list, tuple)) or isinstance(val_incoming, (list, tuple)):
 			if self._merge_lists:
 				return val_target + val_incoming
 
@@ -71,8 +66,8 @@ class MergingStrategyRecursive(BasicMergingStrategy):
 		if check:
 			return self._objects_merge(*main_args)
 
-		# note  overrides the target value with the incoming one
-		return val_incoming
+		# NOTE  overrides the target value with the incoming one
+		return val_incoming  # pragma: no cover
 
 	def _dictionaries_merge(self, val_target: dict, val_incoming: dict):
 		for key, val_in in val_incoming.items():
@@ -90,7 +85,5 @@ class MergingStrategyRecursive(BasicMergingStrategy):
 				if sub_val is None:
 					sub_val = val_target.__dict__[key]
 				val_target.__dict__[key] = sub_val
-			else:
-				val_target.__dict__[key] = val_in
 
 		return val_target

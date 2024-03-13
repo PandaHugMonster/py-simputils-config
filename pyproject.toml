@@ -15,8 +15,7 @@ classifiers = [
 dependencies = [
     "pyyaml",
     "python-magic",
-    "python-dotenv",
-    "typing_extensions"
+    "python-dotenv"
 ]
 license = {file = "LICENSE"}
 keywords = ["simputils", "config", "files", "utils", "framework", "simple"]
@@ -40,6 +39,9 @@ dev = [
     "pytest",
     "pytest-cov",
     "flake8"
+]
+pydantic = [
+    "pydantic"
 ]
 
 [project.urls]

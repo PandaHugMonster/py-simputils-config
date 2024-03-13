@@ -1,0 +1,9 @@
+my_model_1:
+  name: "Ivan Pandytch"
+  age: 201
+  other:
+    address: "Something Something Street"
+    phone: "42"
+    other:
+      country: "Canada"
+      city: "Toronto"

@@ -1,3 +1,4 @@
+import importlib.util
 import inspect
 from abc import ABCMeta, abstractmethod
 from argparse import Namespace
@@ -5,19 +6,20 @@ from collections.abc import Iterable
 from enum import Enum
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from os import _Environ
-from typing import Any, Callable
-
-from typing_extensions import Self
+from typing import Any, Callable, get_args
 
 from simputils.config.base import get_enum_defaults, get_enum_all_annotations
-from simputils.config.enums import ConfigStoreType
-from simputils.config.exceptions import NotPermitted
-from simputils.config.generic import BasicAppliedConf
+from simputils.config.components.prisms import ObjConfigStorePrism
+from simputils.config.components.strategies import MergingStrategyFlat, MergingStrategyRecursive
+from simputils.config.enums import ConfigStoreType, MergingStrategiesEnum
+from simputils.config.exceptions import NotPermitted, StrictKeysEnabled
+from simputils.config.generic import BasicAppliedConf, BasicMergingStrategy
 from simputils.config.types import ConfigType, PreProcessorType, FilterType, SourceType, HandlerType
 
 _type_func = type
 
 
+# noinspection PyMissingConstructor
 class BasicConfigStore(dict, metaclass=ABCMeta):
 
 	_op_class = None
@@ -31,14 +33,29 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 	_filter: FilterType = None
 	_applied_conf_class = None
 	_initial_preprocessed_keys: list[str] = None
+	_strict_keys: bool = False
+	_strategy: str | BasicMergingStrategy = None
 
 	_handler: HandlerType = None
 	"""Handler is just a reference, it is not being called from within ConfigStore"""
+
+	_obj_prism: ObjConfigStorePrism = None
+
+	_pydantic_base_model_class = None
 
 	@classmethod
 	@abstractmethod
 	def applied_conf_class(cls):  # pragma: no cover
 		pass
+
+	@property
+	def obj(self) -> ObjConfigStorePrism:
+		"""
+		Returns Object Prism for ConfigStore
+		"""
+		if not self._obj_prism:
+			self._obj_prism = ObjConfigStorePrism(self)
+		return self._obj_prism
 
 	@property
 	def name(self) -> str | None:
@@ -62,6 +79,10 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		return self._applied_confs
 
 	@property
+	def strategy(self):  # pragma: no cover
+		return self._strategy
+
+	@property
 	def return_default_on_none(self) -> bool:  # pragma: no cover
 		"""
 		If set to True and `get()` method is used with `default` param supplied,
@@ -75,6 +96,15 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		"""
 		return self._return_default_on_none
 
+	_is_pydantic_enabled: bool = True
+
+	@classmethod
+	def _set_pydantic_enabled(cls, val: bool):
+		if val is False:
+			cls._pydantic_base_model_class = None
+		cls._is_pydantic_enabled = val
+
+	# noinspection PyShadowingBuiltins
 	def __init__(
 		self,
 		values: ConfigType = None,
@@ -85,12 +115,20 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		filter: FilterType = None,
 		handler: HandlerType = None,
 		return_default_on_none: bool = True,
+		strict_keys: bool = False,
+		strategy: str | BasicMergingStrategy = MergingStrategiesEnum.FLAT,
 	):
+		if self._is_pydantic_enabled:
+			self._pydantic_setup()
+
 		self._applied_confs = []
 		self._storage = {}
 		self._initial_preprocessed_keys = []
+		self._strict_keys = strict_keys
 		self._return_default_on_none = return_default_on_none
 		self._applied_conf_class = self.applied_conf_class()
+
+		self._prepare_strategy(strategy)
 
 		values, self._name, self._source, self._type, self._handler = self._prepare_supported_types(
 			values,
@@ -112,10 +150,39 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 			self._handler
 		)
 
+	def _prepare_strategy(self, strategy):
+		strategies_group = {
+			MergingStrategiesEnum.FLAT: MergingStrategyFlat,
+			MergingStrategiesEnum.RECURSIVE: MergingStrategyRecursive,
+		}
+
+		if isinstance(strategy, BasicMergingStrategy):
+			self._strategy = strategy
+		else:
+			strategy_class = strategies_group[MergingStrategiesEnum.FLAT]
+
+			if strategy in strategies_group:
+				strategy_class = strategies_group[strategy]
+
+			self._strategy = strategy_class()
+
+	@classmethod
+	def _pydantic_setup(cls):
+		try:
+			if not cls._pydantic_base_model_class:
+				pydantic_namespace = importlib.util.find_spec("pydantic")
+				if pydantic_namespace:
+					cls._pydantic_base_model_class = getattr(
+						importlib.import_module("pydantic"),
+						"BaseModel"
+					)
+		except (ModuleNotFoundError, AttributeError):  # pragma: no cover
+			pass
+
 	def __val_or_val(self, val1: Any | None, val2: Any | None):
 		return val2 if val1 is None else val1
 
-	def _prepare_supported_types(
+	def _prepare_supported_types(  # noqa (The complexity here is necessary)
 		self,
 		values,
 		name: str = None,
@@ -168,33 +235,47 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		# NOTE  Returning key and val intact
 		return key, val
 
+	def _get_prepare_pp_for_dict(self, preprocessor_data):
+		def _wrapper(k, v):
+			return self._key_replace_callback(preprocessor_data, k, v)
+		return _wrapper
+
+	def _get_prepare_pp_for_list(self, callable_list):
+		def _wrapper(k, v):
+			for cbk in callable_list:
+				k, v = cbk(k, v)
+			return k, v
+		return _wrapper
+
+	def _get_prepare_pp_for_non_callable(self):
+		def _wrapper(k, v):
+			return k, v
+		return _wrapper
+
 	def _prepare_preprocessor(self, preprocessor):
 
 		if isinstance(preprocessor, dict):
-			_preprocessor_data = preprocessor
-
-			def _wrapper(k, v):
-				return self._key_replace_callback(_preprocessor_data, k, v)
-
-			preprocessor = _wrapper
+			preprocessor = self._get_prepare_pp_for_dict(preprocessor)
 		elif isinstance(preprocessor, (tuple, list)):
-			_callable_list = preprocessor
-
-			def _wrapper(k, v):
-				for cbk in _callable_list:
-					k, v = cbk(k, v)
-				return k, v
-
-			preprocessor = _wrapper
+			preprocessor = self._get_prepare_pp_for_list(preprocessor)
 		elif not callable(preprocessor):
-
-			def _wrapper(k, v):
-				return k, v
-
-			preprocessor = _wrapper
+			preprocessor = self._get_prepare_pp_for_non_callable()
 
 		return preprocessor
 
+	def _get_prepare_filter_wrapper(self, filter, preprocessor):
+		def _wrapper(key: str, val: Any):
+			key, _ = preprocessor(key, val)
+			if not filter:
+				return True
+			for filter_key in filter:
+				filter_key, _ = preprocessor(filter_key, None)
+				if filter_key == key:
+					return True
+			return False
+		return _wrapper
+
+	# noinspection PyShadowingBuiltins
 	def _prepare_filter(self, filter: FilterType, preprocessor: Callable):
 		_filter = filter
 		if isinstance(filter, Iterable) or filter is True:
@@ -202,17 +283,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 			# NOTE  In case if filter is set to True
 			_filter = self._initial_preprocessed_keys if _filter is True else _filter
 
-			def _wrapper(key: str, val: Any):
-				key, _ = preprocessor(key, val)
-				if not _filter:
-					return True
-				for filter_key in _filter:
-					filter_key, _ = preprocessor(filter_key, None)
-					if filter_key == key:
-						return True
-				return False
-
-			filter = _wrapper
+			filter = self._get_prepare_filter_wrapper(_filter, preprocessor)
 
 		elif not callable(filter):
 			def _wrapper(key: str, val: Any):
@@ -221,15 +292,13 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 		return filter
 
+	# noinspection PyShadowingBuiltins
 	def _apply_data(self, config: ConfigType, preprocessor: Callable, filter: Callable):
-		applied_keys = []
+		storage_result, applied_keys = self._strategy.apply_data(self, config, preprocessor, filter)
+		for key, val in storage_result.items():
+			self._storage[key] = val
 
-		for key, val in dict(config).items():
-			key, val = preprocessor(key, val)
-			if filter(key, val):
-				applied_keys.append(key)
-				self._storage[key] = val
-
+		# MARK	Can be optimized with help of `applied_keys`
 		if not self._initial_preprocessed_keys and config is not None:
 			for key in dict(config).keys():
 				key, _ = preprocessor(key, None)
@@ -244,7 +313,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		source: SourceType = None,
 		type: str = None,
 		handler: HandlerType = None,
-	) -> Self:
+	):
 		"""
 		Setting values to the object that could be accessed dict-like style
 
@@ -257,36 +326,24 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		:param handler:
 		:return:
 		"""
+
 		if not config:  # pragma: no cover
 			return self
+
+		# MARK	Here missing the check for unknown keys!
 
 		applied_conf_class = self._applied_conf_class
 
 		config, name, source, type, handler = self._prepare_supported_types(config, name, source, type, handler)
 
-		if not self.applied_confs:
-			if inspect.isclass(config) and issubclass(config, Enum) and issubclass(config, str):
-				self._op_class = config
+		if not self.applied_confs and inspect.isclass(config) and issubclass(config, Enum) and issubclass(config, str):
+			self._op_class = config
 
-		if config:
-			if inspect.isclass(config) and issubclass(config, Enum) and issubclass(config, str):
-				config = get_enum_defaults(self._op_class)
+		if config and inspect.isclass(config) and issubclass(config, Enum) and issubclass(config, str):
+			config = get_enum_defaults(self._op_class)
 
 		if self._op_class and issubclass(self._op_class, Enum) and issubclass(self._op_class, str):
-			annotations = get_enum_all_annotations(self._op_class)
-			for key, val in config.items():
-				if key not in annotations:
-					continue
-				annotated_data = annotations[key].data
-
-				_check = annotated_data and \
-					"type" in annotated_data and \
-					annotated_data["type"] \
-					and isinstance(annotated_data["type"], Callable)
-
-				if _check:
-					annotated_type = annotated_data["type"]
-					config[key] = annotated_type(val)
+			config = self._process_str_enum(config)
 
 		applied_keys = self._apply_data(config, self._preprocessor, self._filter)
 
@@ -302,18 +359,41 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		)
 		return self
 
-	def __setitem__(self, key, value):
-		frame_context = inspect.stack()[1][0]
-		frame_info = inspect.getframeinfo(frame_context)
+	def _process_str_enum(self, config):
+		annotations = get_enum_all_annotations(self._op_class)
+		for key, val in config.items():
+			if key not in annotations:
+				continue
+			annotated_data = annotations[key].data
 
-		self.config_apply(
-			{key: value},
-			f"{frame_info.function}:{frame_info.lineno}",
-			frame_info.filename,
-			ConfigStoreType.SINGLE_VALUE
-		)
+			if annotated_data and "type" in annotated_data and annotated_data["type"]:
+				like_union = get_args(annotated_data["type"])
+				if not like_union:
+					like_union = (annotated_data["type"],)
 
-	def applied_from(self, key: str, include_unprocessed_keys: bool = False) -> dict:
+				self._process_union_subtypes(config, like_union, key, val)
+
+		return config
+
+	def _process_union_subtypes(self, config, like_union, key, val):
+		pydantic_base_model_class = self._pydantic_base_model_class
+		for subtype in like_union:
+			if val is None:
+				config[key] = val
+				break
+			elif callable(subtype):
+				# noinspection PyTypeChecker
+				if pydantic_base_model_class and issubclass(subtype, pydantic_base_model_class):
+					# noinspection PyTypeChecker
+					if isinstance(val, subtype):
+						config[key] = val
+					else:
+						config[key] = subtype(**val)
+				else:
+					config[key] = subtype(val)
+				break
+
+	def applied_from(self, key: str, include_unprocessed_keys: bool = False) -> dict | None:
 		"""
 		Returns the latest `AppliedConf` which affected `key` value
 
@@ -329,25 +409,6 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 		return None
 
-	def __add__(self, other):  # pragma: no cover
-		return self.config_apply(other)
-
-	def __repr__(self):  # pragma: no cover
-		return repr(self._storage)
-
-	def __len__(self):  # pragma: no cover
-		return len(self._storage)
-
-	def __delitem__(self, key):  # pragma: no cover
-		del self._storage[key]
-
-	def __getitem__(self, key):
-		preprocessor = self._preprocessor
-
-		if isinstance(key, str) and isinstance(key, Enum):
-			key, _ = preprocessor(key.value, None)
-		return self._storage.get(key)
-
 	def get(self, key: str, default: Any = None):
 		"""
 		Equivalent to `conf["my-key"]` but you can specify default if the key is not found
@@ -357,9 +418,12 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		:return:
 		"""
 		preprocessor = self._preprocessor
+		key, _ = preprocessor(key, None)
 
-		if isinstance(key, str) and isinstance(key, Enum):
-			key, _ = preprocessor(key.value, None)
+		if self._strict_keys and key not in self._storage:
+			raise StrictKeysEnabled(
+				f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown"
+			)
 
 		res = self._storage.get(key)
 		if self._return_default_on_none:
@@ -377,6 +441,14 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		return self._storage.copy()
 
 	def update(self, __m, **kwargs):
+		if self._strict_keys:
+			for key in __m:
+				preprocessor = self._preprocessor
+				key, _ = preprocessor(key, None)
+				if key not in self._storage:
+					raise StrictKeysEnabled(
+						f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown"
+					)
 		self.config_apply(__m)
 
 	def keys(self):  # pragma: no cover
@@ -393,6 +465,56 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 	def popitem(self):  # pragma: no cover
 		raise NotPermitted("Popping from ConfigStore is not permitted due to architecture")
+
+	def __setitem__(self, key, value):
+		preprocessor = self._preprocessor
+		key, _ = preprocessor(key, None)
+
+		if self._strict_keys and key not in self._storage:
+			raise StrictKeysEnabled(
+				f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown"
+			)
+
+		frame_context = inspect.stack()[1][0]
+		frame_info = inspect.getframeinfo(frame_context)
+
+		self.config_apply(
+			{key: value},
+			f"{frame_info.function}:{frame_info.lineno}",
+			frame_info.filename,
+			ConfigStoreType.SINGLE_VALUE
+		)
+
+	def __add__(self, other):  # pragma: no cover
+		if self._strict_keys:
+			for key in other:
+				preprocessor = self._preprocessor
+				key, _ = preprocessor(key, None)
+				if key not in self._storage:
+					raise StrictKeysEnabled(
+						f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown"
+					)
+		return self.config_apply(other)
+
+	def __repr__(self):  # pragma: no cover
+		return repr(self._storage)
+
+	def __len__(self):  # pragma: no cover
+		return len(self._storage)
+
+	def __delitem__(self, key):  # pragma: no cover
+		del self._storage[key]
+
+	def __getitem__(self, key):
+		preprocessor = self._preprocessor
+		key, _ = preprocessor(key, None)
+
+		if self._strict_keys and key not in self._storage:
+			raise StrictKeysEnabled(
+				f"Strict Keys mode enabled. Only initial set of keys allowed. Key \"{key}\" is unknown"
+			)
+
+		return self._storage.get(key)
 
 	def __cmp__(self, other):  # pragma: no cover
 		return self._storage == other

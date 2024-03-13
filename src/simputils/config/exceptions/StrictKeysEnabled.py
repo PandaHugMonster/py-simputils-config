@@ -1,0 +1,4 @@
+
+
+class StrictKeysEnabled(Exception):
+	pass

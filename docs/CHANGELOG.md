@@ -1,5 +1,49 @@
 # Changelog
 
+## 1.1.0
+
+* Added `names()` class method to `simputils.config.generic.BasicConfigEnum`
+* Decreased acceptable Cyclomatic Complexity level 
+  from 10 to 5 in the project (for better code quality control)
+* Removed unnecessary dependency of `typing_extensions`
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/21
+  * Implemented flag and functionality for strict set of keys
+    * If enabled, and unknown key is accessed the `simputils.config.exceptions.StrictKeysEnabled` exception
+      is raised
+  * Fixed a small bug with some minimal preprocessing when getting value by the "key". 
+    Now all the provided keys are passing the `preprocessor` to conform with the rules.
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/29
+  * Added document [Working with ConfigHub](working-with-config-hub.md)
+  * Implemented "Conditional Config", callables for `ConfigHub.aggregate()`
+    * Documentation can be found here: [Working with ConfigHub](working-with-config-hub.md#conditional-config)
+    * Simple support for `ExecEnv` aka "Stage" through "Conditional Config"
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/20
+  * Implemented `simputils.config.components.prisms.ObjConfigStorePrism` for `ConfigStore`.
+    It allows to use "Config Object Style Access" for accessing key/value pairs through `obj` field of `ConfigStore` object.
+  * And documentation for it: [Config Object Style Access](config-object-style-access.md)
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/32
+  * Improved compatibility with [pydantic](https://docs.pydantic.dev/latest/) models
+    * Now pydantic models can be used as `type` for Enum Config annotations, then the structures
+      will be converted accordingly. Useful especially with "Config Object Style Access" aka `ConfigStore.obj`
+    * Documentation can be found here: [Pydantic Integration](pydantic-integration.md)
+  * Implemented proper `type` processing of union types for Config Enum annotations
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/25
+  * Prepared documentation and schemes for all strategies: [Config Merging Strategies](config-merging-strategies.md)
+  * Polished the concept of Merging Strategies (see schemes in [schemes/images](schemes/images))
+  * Implemented general Merging Strategies infrastructure
+  * "Implemented" Flat Strategy (teeny-tiny class of couple lines)
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/23
+  * Implemented Recursive Merging Strategy `simputils.config.components.strategies.MergingStrategyRecursive`
+    * With params to **replace lists** (default) or **extend lists**
+    * Recursive merge of objects like "pydantic models" is supported
+    * Recursive merge of other objects is supported (like `dataclasses`, etc.) but might not
+      be fully out of the box working as expected
+  * Added additional unit-tests (for combination of recursive merging strategy and pydantic integration)
+  * Updated documentation about Merging Strategies in general, and about Recursive Merging Strategy
+    * Can be found here: [Config Merging Strategies](config-merging-strategies.md)
+
+
+
 ## 1.0.5
 * Fixed missing dependency of `typing_extensions`
 
@@ -50,7 +94,7 @@
 * Extracted basic fields from `simputils.config.models.AppliedConf` to 
   `simputils.config.generic.BasicAppliedConf` in fully backward-compatible way
 * Improved some of `simputils.config.generic.BasicConfigStore` functionality
-* Added `ARGPARSER_NAMESPACE` key to `src.simputils.config.enums.ConfigStoreType`
+* Added `ARGPARSER_NAMESPACE` key to `simputils.config.enums.ConfigStoreType`
 * Some general code cleanups and code format improvement
 * Improved some documentation [../README.md](../README.md)
 * `Enum` support added:

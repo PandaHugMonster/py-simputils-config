@@ -1,0 +1,9 @@
+first_person:
+  age: 900
+  geo:
+    country: "World"
+  contacts:
+    - "https://github.com/PandaHugMonster/py-simputils-config"
+  favourite:
+    drinks:
+      - "tequila"

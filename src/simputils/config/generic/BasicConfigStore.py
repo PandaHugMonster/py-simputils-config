@@ -10,7 +10,7 @@ from typing import Any, Callable, get_args
 
 from simputils.config.base import get_enum_defaults, get_enum_all_annotations
 from simputils.config.components.prisms import ObjConfigStorePrism
-from simputils.config.components.strategies import FlatMergingStrategy
+from simputils.config.components.strategies import MergingStrategyFlat, MergingStrategyRecursive
 from simputils.config.enums import ConfigStoreType, MergingStrategiesEnum
 from simputils.config.exceptions import NotPermitted, StrictKeysEnabled
 from simputils.config.generic import BasicAppliedConf, BasicMergingStrategy
@@ -151,10 +151,20 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		)
 
 	def _prepare_strategy(self, strategy):
+		strategies_group = {
+			MergingStrategiesEnum.FLAT: MergingStrategyFlat,
+			MergingStrategiesEnum.RECURSIVE: MergingStrategyRecursive,
+		}
+
 		if isinstance(strategy, BasicMergingStrategy):
 			self._strategy = strategy
-		elif strategy == MergingStrategiesEnum.FLAT:
-			self._strategy = FlatMergingStrategy()
+		else:
+			strategy_class = strategies_group[MergingStrategiesEnum.FLAT]
+
+			if strategy in strategies_group:
+				strategy_class = strategies_group[strategy]
+
+			self._strategy = strategy_class()
 
 	@classmethod
 	def _pydantic_setup(cls):
@@ -284,7 +294,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 	# noinspection PyShadowingBuiltins
 	def _apply_data(self, config: ConfigType, preprocessor: Callable, filter: Callable):
-		storage_result, applied_keys = self._strategy.apply_data(config, preprocessor, filter)
+		storage_result, applied_keys = self._strategy.apply_data(self, config, preprocessor, filter)
 		for key, val in storage_result.items():
 			self._storage[key] = val
 
@@ -374,7 +384,11 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 			elif callable(subtype):
 				# noinspection PyTypeChecker
 				if pydantic_base_model_class and issubclass(subtype, pydantic_base_model_class):
-					config[key] = subtype(**val)
+					# noinspection PyTypeChecker
+					if isinstance(val, subtype):
+						config[key] = val
+					else:
+						config[key] = subtype(**val)
 				else:
 					config[key] = subtype(val)
 				break

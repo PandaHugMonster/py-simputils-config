@@ -32,6 +32,11 @@
   * Polished the concept of Merging Strategies (see schemes in [schemes/images](schemes/images))
   * Implemented general Merging Strategies infrastructure
   * "Implemented" Flat Strategy (teeny-tiny class of couple lines)
+* Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/23
+  * Implemented Recursive Merging Strategy `simputils.config.components.strategies.MergingStrategyRecursive`
+    * With params to **replace lists** (default) or **extend lists**
+  * Added additional unit-tests (for combination of recursive merging strategy and pydantic integration)
+  * Updated documentation about Merging Strategies in general, and about Recursive Merging Strategy
     
 
 

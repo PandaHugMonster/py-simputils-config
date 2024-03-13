@@ -72,4 +72,75 @@ data = [
 			}
 		)
 	),
+
+
+	(
+		{
+			"test1": 1,
+			"test2": "very new",
+			"test3": False,
+			"test4": True,
+			"test5": 0.01,
+			"test6": (1, 1000, 1001, 1002),
+			"test7": (),
+			"test8": {
+				"sub_test_4": {
+					"sub_sub_test_1": 10,
+					"sub_sub_test_2": 20,
+					"sub_sub_test_3": 30,
+					"sub_sub_test_6": "gooooo",
+				},
+				"sub_test_5": {
+					"sub_sub_test_7": {
+						"sub_sub_sub_test1": (500, 600, 700, 800, 900)
+					},
+				},
+			}
+		},
+
+		(
+			{
+				"test1": 2,
+				"test2": "old",
+				"test3": False,
+				"test4": True,
+				"test6": list(),
+				"test8": {
+					"sub_test_4": {
+						"sub_sub_test_1": 10,
+						"sub_sub_test_3": 30,
+						"sub_sub_test_6": "gooooo",
+					},
+					"sub_test_5": {
+						"sub_sub_test_7": {
+							"sub_sub_sub_test1": (500, )
+						},
+					},
+				}
+			},
+			{
+				"test1": 1,
+				"test2": "new",
+				"test3": True,
+				"test5": 0.01,
+				"test6": (1,),
+				"test7": (),
+				"test8": {
+					"sub_test_4": {
+						"sub_sub_test_2": 20,
+					},
+					"sub_test_5": {
+						"sub_sub_test_7": {
+							"sub_sub_sub_test1": (600, 700, 800, 900)
+						},
+					},
+				}
+			},
+			{
+				"test2": "very new",
+				"test6": (1000, 1001, 1002),
+				"test3": False
+			},
+		)
+	),
 ]

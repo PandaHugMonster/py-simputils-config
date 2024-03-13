@@ -1,0 +1,32 @@
+{
+  "name":"Ivan Ponomarev",
+  "nickname":"PandaHugMonster",
+  "age":1500,
+  "geo":{
+    "country":"World",
+    "city":"Space"
+  },
+  "contacts":[
+    "https://github.com/PandaHugMonster",
+    "https://www.linkedin.com/in/ponomarevivan/",
+    "https://github.com/PandaHugMonster/py-simputils-config",
+    "https://github.com/PandaHugMonster/php-simputils"
+  ],
+  "favourite":{
+    "things":[
+      "friends",
+      "coding",
+      "complex-systems"
+    ],
+    "drinks":[
+      "coffee",
+      "cola",
+      "water",
+      "tequila"
+    ],
+    "food":[
+      "lasagna",
+      "jamon"
+    ]
+  }
+}

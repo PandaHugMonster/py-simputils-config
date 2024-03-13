@@ -1,0 +1,19 @@
+first_person:
+  name: "Ivan Ponomarev"
+  nickname: "PandaHugMonster"
+  age: 34
+  geo:
+    country: "Austria"
+    city: "Vienna"
+  contacts:
+    - "https://github.com/PandaHugMonster"
+    - "https://www.linkedin.com/in/ponomarevivan/"
+  favourite:
+    things:
+      - "friends"
+      - "coding"
+      - "complex-systems"
+    drinks:
+      - "coffee"
+      - "cola"
+      - "water"

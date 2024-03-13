@@ -4,10 +4,10 @@ from simputils.config.generic import BasicMergingStrategy
 
 class MergingStrategyRecursive(BasicMergingStrategy):
 
-	_merge_lists: bool = None
+	_list_extend: bool = None
 
-	def __init__(self, merge_lists: bool = False):
-		self._merge_lists = merge_lists
+	def __init__(self, list_extend: bool = False):
+		self._list_extend = list_extend
 
 	# noinspection PyUnusedLocal
 	@classmethod
@@ -52,7 +52,7 @@ class MergingStrategyRecursive(BasicMergingStrategy):
 			return val_incoming
 
 		if isinstance(val_target, (list, tuple)) or isinstance(val_incoming, (list, tuple)):
-			if self._merge_lists:
+			if self._list_extend:
 				return val_target + val_incoming
 
 			return val_incoming

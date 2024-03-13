@@ -6,12 +6,12 @@
 
 Config Merging Strategies are the ways `ConfigStore` objects can be merged one into another.
 
-There are 3 strategies:
+There are 2 major strategies:
 * Flat Strategy (default)
-* Multidimensional Replace Strategy
-* Multidimensional Extend Strategy
+* Recursive Strategy
 
 Only the strategy specified to the target `ConfigStore` (the one, into which others are merged).
+Though if you do custom chaining - it's up to you.
 
 **Always consider order of precedence of merging `ConfigStore` objects!**
 
@@ -31,29 +31,10 @@ Only the strategy specified to the target `ConfigStore` (the one, into which oth
 >     or `conf["my_key_2"].level_2_key.level_3_key` 
 >     (nomenclature is applicable to "dot-notation style" as well)
 
-Strategy can be specified through `strategy` argument for `ConfigStore` constructor:
-```python
-from simputils.config.components import ConfigHub
-from simputils.config.models import ConfigStore
+Strategy can be specified through `strategy` argument for `ConfigStore` constructor
+(see examples in the sub-sections further).
 
-conf = ConfigHub.aggregate(
-    {
-        "val1": "test",
-        "val2": 34,
-        "val3": True,
-    },
-
-    target=ConfigStore(
-        # Even though "flat" strategy is default, 
-        # it's a good practice to specify it anyway! 
-        strategy=ConfigStore.STRATEGY_FLAT,
-    ),
-)
-
-print(conf.strategy)
-```
-
-Both predefined `string` name or instance of 
+Both predefined `string` name (or Enum value of `simputils.config.enums.MergingStrategiesEnum`) or instance of
 `simputils.config.generic.BasicMergingStrategy` and it's derivatives can be supplied 
 to `strategy` argument. 
 
@@ -62,7 +43,7 @@ to `strategy` argument.
 > of a strategy, and do not do anything with any internal structure. 
 > 
 > In case you need that, you have to implement your very own custom `preprocessor` or `filter` to
-> accommodate such functionality (and go through all the structures necessary).
+> accommodate such functionality (and go through all the sub-structures necessary).
 
 
 ## Flat Strategy
@@ -86,22 +67,207 @@ It might look counterintuitive, though that design was done consciously.
 > It is considered a good practice to always specify strategy for your config instance,
 > even if it's "Flat Strategy" which is default one!
 
+```python
+from simputils.config.components import ConfigHub
+from simputils.config.models import ConfigStore
+from simputils.config.enums import MergingStrategiesEnum
 
-## Multidimensional Strategies
+conf = ConfigHub.aggregate(
+    {
+        "val1": "test",
+        "val2": 34,
+        "val3": True,
+        "val4": {
+            "sub1": {
+                "subsub1": [1, 2, 3],
+                "subsub2": "something something",
+            }
+        }
+    },
+    {
+        "val1": "new test",
+        "val4": {
+            "sub1": {
+                "subsub2": "another string",
+                "subsub1": [4, 5, 6, 1, 3, 4],
+            },
+            "sub2": {
+                "subsub3": 34,
+            }
+        }
+    },
+
+    target=ConfigStore(
+        # Even though "flat" strategy is default,
+        # it's a good practice to specify it anyway!
+        strategy=MergingStrategiesEnum.FLAT,
+    ),
+)
+
+print(conf.strategy)
+print(conf)
+```
+
+Output:
+```text
+<simputils.config.components.strategies.MergingStrategyFlat.MergingStrategyFlat object at 0x7f058d732620>
+{
+    'val1': 'new test',
+    'val2': 34,
+    'val3': True,
+    'val4': {
+        'sub1': {
+            'subsub2': 'another string',
+            'subsub1': [4, 5, 6, 1, 3, 4]
+        },
+        'sub2': {
+            'subsub3': 34
+        }
+    }
+}
+```
+
+## Recursive Strategy
 
 > [!IMPORTANT]
-> The multidimensional strategies will work as displayed only
-> if the structures of target and incoming configs are the same.
-> 
-> **If the structures are different, the incompatible types of target one will be replaced with the incoming ones!**
+> Recursive Merging Strategy could be resource expensive, and even lead to dead loops!
+>
+> Avoid specifying mutual reference and self-reference of the object for this strategy.
 
-> [!IMPORTANT]
-> All the multidimensional strategies could be resource expensive, and even lead to dead loops!
+### List Extend Parameter
 
-### Multidimensional Replace Strategy
+#### List Replace (default)
+If parameter `list_extend=False`
 
-![merging-strategies-Multidimensional Replace Strategy.drawio.png](schemes/images/merging-strategies-Multidimensional Replace Strategy.drawio.png)
+![merging-strategies-Recursive Strategy, List Replace.drawio.png](schemes/images/merging-strategies-Recursive Strategy, List Replace.drawio.png)
 
-### Multidimensional Extend Strategy
+```python
+from simputils.config.components import ConfigHub
+from simputils.config.models import ConfigStore
+from simputils.config.enums import MergingStrategiesEnum
 
-![merging-strategies-Multidimensional Extend Strategy.drawio.png](schemes/images/merging-strategies-Multidimensional Extend Strategy.drawio.png)
+conf = ConfigHub.aggregate(
+    {
+        "val1": "test",
+        "val2": 34,
+        "val3": True,
+        "val4": {
+            "sub1": {
+                "subsub1": [1, 2, 3],
+                "subsub2": "something something",
+            }
+        }
+    },
+    {
+        "val1": "new test",
+        "val4": {
+            "sub1": {
+                "subsub2": "another string",
+                "subsub1": [4, 5, 6, 1, 3, 4],
+            },
+            "sub2": {
+                "subsub3": 34,
+            }
+        }
+    },
+
+    target=ConfigStore(
+        strategy=MergingStrategiesEnum.RECURSIVE,
+    ),
+)
+
+print(conf.strategy)
+print(conf)
+```
+
+Output:
+```text
+<simputils.config.components.strategies.MergingStrategyRecursive.MergingStrategyRecursive object at 0x7f058d7327a0>
+{
+    'val1': 'new test',
+    'val2': 34,
+    'val3': True,
+    'val4': {
+        'sub1': {
+            'subsub1': [4, 5, 6, 1, 3, 4],
+            'subsub2': 'another string'
+        },
+        'sub2': {
+            'subsub3': 34
+        }
+    }
+}
+```
+
+You can use Recursive Merging Strategy without params through `MergingStrategiesEnum.RECURSIVE` value
+as shown above, or creating instance of `simputils.config.components.strategies.MergingStrategyRecursive`
+(with or without params)
+
+
+#### List Extend
+If parameter `list_extend=True`.
+
+In this case lists of the same position will be extended with the incoming one.
+
+> [!NOTE]
+> New values of the list merge, will be simply added, even if they are duplicates!
+
+![merging-strategies-Recursive Strategy, List Extend.drawio.png](schemes/images/merging-strategies-Recursive Strategy, List Extend.drawio.png)
+
+```python
+from simputils.config.components import ConfigHub
+from simputils.config.models import ConfigStore
+from simputils.config.components.strategies import MergingStrategyRecursive
+
+conf = ConfigHub.aggregate(
+    {
+        "val1": "test",
+        "val2": 34,
+        "val3": True,
+        "val4": {
+            "sub1": {
+                "subsub1": [1, 2, 3],
+                "subsub2": "something something",
+            }
+        }
+    },
+    {
+        "val1": "new test",
+        "val4": {
+            "sub1": {
+                "subsub2": "another string",
+                "subsub1": [4, 5, 6, 1, 3, 4],
+            },
+            "sub2": {
+                "subsub3": 34,
+            }
+        }
+    },
+
+    target=ConfigStore(
+        strategy=MergingStrategyRecursive(list_extend=True),
+    ),
+)
+
+print(conf.strategy)
+print(conf)
+```
+
+Output:
+```text
+<simputils.config.components.strategies.MergingStrategyRecursive.MergingStrategyRecursive object at 0x7f058d731c00>
+{
+    'val1': 'new test',
+    'val2': 34,
+    'val3': True,
+    'val4': {
+        'sub1': {
+            'subsub1': [1, 2, 3, 4, 5, 6, 1, 3, 4],
+            'subsub2': 'another string'
+        },
+        'sub2': {
+            'subsub3': 34
+        }
+    }
+}
+```

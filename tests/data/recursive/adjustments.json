@@ -1,0 +1,14 @@
+{
+  "first_person": {
+    "age": 1500,
+    "geo": {
+      "city": "Space"
+    },
+    "contacts": [
+      "https://github.com/PandaHugMonster/php-simputils"
+    ],
+    "favourite": {
+      "food": ["lasagna", "jamon"]
+    }
+  }
+}

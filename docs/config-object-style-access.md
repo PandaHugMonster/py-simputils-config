@@ -56,7 +56,7 @@ For the most part this object will behave identically to `ConfigStore` object.
 
 > [!IMPORTANT]
 > This is a very brief and quite crude example, it's only for demonstration, 
-> consider using the next section example for your projects 
+> more info and examples will be added to best-practises documentation later on.
 
 Example:
 
@@ -106,3 +106,4 @@ if __name__ == "__main__":
    print(conf.val1, conf.val2, conf.val3)
 ```
 
+In this way the IDE hints and autocompletion should work on `conf` as expected.

@@ -137,7 +137,7 @@ Output:
 > [!NOTE]
 > Merge of Pydantic Models (objects) is supported in the same way as dictionaries
 
-### List Extend Parameter
+### `list_extend` argument
 
 #### List Replace (default)
 If argument `list_extend=False` is supplied (default)

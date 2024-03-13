@@ -134,10 +134,13 @@ Output:
 >
 > Avoid specifying mutual reference and self-reference of the object for this strategy.
 
+> [!NOTE]
+> Merge of Pydantic Models (objects) is supported in the same way as dictionaries
+
 ### List Extend Parameter
 
 #### List Replace (default)
-If parameter `list_extend=False`
+If argument `list_extend=False` is supplied (default)
 
 ![merging-strategies-Recursive Strategy, List Replace.drawio.png](schemes/images/merging-strategies-Recursive Strategy, List Replace.drawio.png)
 
@@ -199,15 +202,15 @@ Output:
 }
 ```
 
-You can use Recursive Merging Strategy without params through `MergingStrategiesEnum.RECURSIVE` value
+You can use Recursive Merging Strategy without arguments through `MergingStrategiesEnum.RECURSIVE` value
 as shown above, or creating instance of `simputils.config.components.strategies.MergingStrategyRecursive`
-(with or without params)
+(with or without arguments)
 
 
 #### List Extend
-If parameter `list_extend=True`.
+If argument `list_extend=True` is supplied.
 
-In this case lists of the same position will be extended with the incoming one.
+In this case a list of the same position will be extended with the incoming one.
 
 > [!NOTE]
 > New values of the list merge, will be simply added, even if they are duplicates!

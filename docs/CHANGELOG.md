@@ -35,9 +35,13 @@
 * Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/23
   * Implemented Recursive Merging Strategy `simputils.config.components.strategies.MergingStrategyRecursive`
     * With params to **replace lists** (default) or **extend lists**
+    * Recursive merge of objects like "pydantic models" is supported
+    * Recursive merge of other objects is supported (like `dataclasses`, etc.) but might not
+      be fully out of the box working as expected
   * Added additional unit-tests (for combination of recursive merging strategy and pydantic integration)
   * Updated documentation about Merging Strategies in general, and about Recursive Merging Strategy
-    
+    * Can be found here: [Config Merging Strategies](config-merging-strategies.md)
+
 
 
 ## 1.0.5

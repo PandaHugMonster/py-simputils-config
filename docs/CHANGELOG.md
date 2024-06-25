@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1
+* Fixed Circular dependency if `ConfigStore` used without importing `ConfigHub`
+  * Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/38
+  * Structure of tests is adjusted to replicate the issue with tests
+
 ## 1.1.0
 
 * Added `names()` class method to `simputils.config.generic.BasicConfigEnum`

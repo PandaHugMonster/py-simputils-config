@@ -43,6 +43,8 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 
 	_pydantic_base_model_class = None
 
+	_none_considered_empty: bool = False
+
 	@classmethod
 	@abstractmethod
 	def applied_conf_class(cls):  # pragma: no cover
@@ -96,6 +98,10 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		"""
 		return self._return_default_on_none
 
+	@property
+	def none_considered_empty(self) -> bool:  # pragma: no cover
+		return self._none_considered_empty
+
 	_is_pydantic_enabled: bool = True
 
 	@classmethod
@@ -115,6 +121,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		filter: FilterType = None,
 		handler: HandlerType = None,
 		return_default_on_none: bool = True,
+		none_considered_empty: bool = False,
 		strict_keys: bool = False,
 		strategy: str | BasicMergingStrategy = MergingStrategiesEnum.FLAT,
 	):
@@ -127,6 +134,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		self._strict_keys = strict_keys
 		self._return_default_on_none = return_default_on_none
 		self._applied_conf_class = self.applied_conf_class()
+		self._none_considered_empty = none_considered_empty
 
 		self._prepare_strategy(strategy)
 
@@ -147,7 +155,8 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 			self._name,
 			self._source,
 			self._type,
-			self._handler
+			self._handler,
+			self._none_considered_empty,
 		)
 
 	def _prepare_strategy(self, strategy):
@@ -190,23 +199,23 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		type: str = None,
 		handler: HandlerType = None
 	):
-		if isinstance(values, _Environ):
+		if isinstance(values, _Environ) or type == ConfigStoreType.ENV_VARS:
 			name = self.__val_or_val(name, "environ")
 			source = self.__val_or_val(source, "os")
 			type = self.__val_or_val(type, ConfigStoreType.ENV_VARS)
-		elif isinstance(values, Namespace):
+		elif isinstance(values, Namespace) or type == ConfigStoreType.ARGPARSER_NAMESPACE:
 			name = self.__val_or_val(name, "args")
 			source = self.__val_or_val(source, values)
 			type = self.__val_or_val(type, ConfigStoreType.ARGPARSER_NAMESPACE)
 			values = vars(values)
-		elif isinstance(values, self.__class__):
+		elif isinstance(values, self.__class__) or type == ConfigStoreType.CONFIG_STORE:
 			name = self.__val_or_val(name, values.name)
 			source = self.__val_or_val(source, values.source)
 			type = self.__val_or_val(type, values.type)
 			handler = self.__val_or_val(handler, values.handler)
-		elif isinstance(values, dict):
+		elif isinstance(values, dict) or type == ConfigStoreType.DICT:
 			type = self.__val_or_val(type, ConfigStoreType.DICT)
-		elif inspect.isclass(values) and issubclass(values, Enum) and issubclass(values, str):
+		elif inspect.isclass(values) and issubclass(values, Enum) and issubclass(values, str) or type == ConfigStoreType.ENUM:
 			name = _type_func(values)
 			source = values
 			type = ConfigStoreType.ENUM
@@ -293,8 +302,20 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		return filter
 
 	# noinspection PyShadowingBuiltins
-	def _apply_data(self, config: ConfigType, preprocessor: Callable, filter: Callable):
-		storage_result, applied_keys = self._strategy.apply_data(self, config, preprocessor, filter)
+	def _apply_data(
+		self,
+		config: ConfigType,
+		preprocessor: Callable,
+		filter: Callable,
+		none_considered_empty: bool = False
+	):
+		storage_result, applied_keys = self._strategy.apply_data(
+			self,
+			config,
+			preprocessor,
+			filter,
+			none_considered_empty
+		)
 		for key, val in storage_result.items():
 			self._storage[key] = val
 
@@ -313,6 +334,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		source: SourceType = None,
 		type: str = None,
 		handler: HandlerType = None,
+		none_considered_empty: bool = False,
 	):
 		"""
 		Setting values to the object that could be accessed dict-like style
@@ -324,6 +346,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		:param source:
 		:param type:
 		:param handler:
+		:param none_considered_empty:
 		:return:
 		"""
 
@@ -345,7 +368,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		if self._op_class and issubclass(self._op_class, Enum) and issubclass(self._op_class, str):
 			config = self._process_str_enum(config)
 
-		applied_keys = self._apply_data(config, self._preprocessor, self._filter)
+		applied_keys = self._apply_data(config, self._preprocessor, self._filter, none_considered_empty)
 
 		self._applied_confs.append(
 			applied_conf_class(

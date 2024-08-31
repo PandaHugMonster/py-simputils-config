@@ -4,6 +4,18 @@
 * Fixed Circular dependency if `ConfigStore` used without importing `ConfigHub`
   * Ticket https://github.com/PandaHugMonster/py-simputils-config/issues/38
   * Structure of tests is adjusted to replicate the issue with tests
+  * This is a quick fix through a small hack of pre-importing `ConfigHub` for the project.
+    It should be resolved eventually during refactorings.
+* Added `none_considered_empty` (default `False`) argument for `ConfigStore`, that considers any `None` value
+  for parsing as "undefined", which prevents overriding previous aggregated config value with `None`.
+  Heavily useful in combination with `argparser`, because `None` values from `argparser` might
+  damage config-default values.
+* Added a few typical examples in [examples](../examples) folder
+  * [example-quick-configs.py](../examples/example-quick-configs.py)
+  * [example-config-from-argparser.py](../examples/example-config-from-argparser.py)
+  * [example-config-from-env-vars.py](../examples/example-config-from-env-vars.py)
+* Fixed a bug with applied confs history, when argparser's `Namespace` is displayed as `ConfigStore` instead of `args`
+  when `ConfigHub` is used.
 
 ## 1.1.0
 

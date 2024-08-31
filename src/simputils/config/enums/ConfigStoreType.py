@@ -15,3 +15,4 @@ class ConfigStoreType(str, Enum):
 	DICT = "dict"
 	ARGPARSER_NAMESPACE = "argparser"
 	ENUM = "enum"
+	CONFIG_STORE = "ConfigStore"

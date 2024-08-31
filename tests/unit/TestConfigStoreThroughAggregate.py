@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser
 from enum import Enum
 from typing import Annotated
@@ -6,6 +7,7 @@ import pytest
 
 from simputils.config.base import simputils_pp, simputils_pp_with_cast
 from simputils.config.components import ConfigHub
+from simputils.config.enums import ConfigStoreType
 from simputils.config.exceptions import StrictKeysEnabled
 from simputils.config.generic import BasicConfigEnum
 from simputils.config.models import ConfigStore, AnnotatedConfigData
@@ -106,6 +108,52 @@ class TestConfigStoreThroughAggregate:
 
 		assert conf["NAME"] == "PandaHugMonster"
 		assert int(conf["AGE"]) == 33
+
+	def test_arg_parser_check_applied_confs_history(self):
+		parser = ArgumentParser()
+		parser.add_argument("-n", "--name", type=str, required=True)
+		parser.add_argument("-s", "--surname", type=str)
+		parser.add_argument("-a", "--age", type=int)
+
+		args = parser.parse_args(["-n", "PandaHugMonster"])
+
+		config = ConfigHub.aggregate(
+			{
+				"name": "My Name",
+			},
+			args,
+			os.environ,
+		)
+		applied_conf_dict = config.applied_confs[0]
+		assert applied_conf_dict.type == ConfigStoreType.DICT
+
+		applied_conf_args = config.applied_confs[1]
+		assert applied_conf_args.type == ConfigStoreType.ARGPARSER_NAMESPACE
+
+		applied_conf_env_vars = config.applied_confs[2]
+		assert applied_conf_env_vars.type == ConfigStoreType.ENV_VARS
+
+	def test_arg_parser_none_considered_empty(self):
+		parser = ArgumentParser()
+		parser.add_argument("-n", "--name", type=str, required=True)
+		parser.add_argument("-s", "--surname", type=str)
+		parser.add_argument("-a", "--age", type=int)
+
+		args = parser.parse_args(["-n", "PandaHugMonster"])
+
+		config = ConfigHub.aggregate(
+			{
+				"name": "My Name",
+				"surname": "test",
+				"age": 68
+			},
+			args,
+			target=ConfigStore(
+				none_considered_empty=True
+			)
+		)
+
+		assert config["age"] == 68
 
 	def test_annotated_config_data(self):
 		class MyEnum(BasicConfigEnum):

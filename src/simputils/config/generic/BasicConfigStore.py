@@ -81,6 +81,13 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		return self._applied_confs
 
 	@property
+	def history(self) -> list[BasicAppliedConf]:
+		"""
+		Alias for `applied_confs`
+		"""
+		return self.applied_confs
+
+	@property
 	def strategy(self):  # pragma: no cover
 		return self._strategy
 
@@ -211,7 +218,8 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		elif isinstance(values, self.__class__) or type == ConfigStoreType.CONFIG_STORE:
 			name = self.__val_or_val(name, values.name)
 			source = self.__val_or_val(source, values.source)
-			type = self.__val_or_val(type, values.type)
+			# type = self.__val_or_val(type, values.type)
+			type = self.__val_or_val(type, ConfigStoreType.CONFIG_STORE)
 			handler = self.__val_or_val(handler, values.handler)
 		elif isinstance(values, dict) or type == ConfigStoreType.DICT:
 			type = self.__val_or_val(type, ConfigStoreType.DICT)

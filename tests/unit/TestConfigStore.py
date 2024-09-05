@@ -56,7 +56,7 @@ class TestConfigStore:
 		applied_conf_ref = conf.applied_confs[2]
 		assert isinstance(applied_conf_ref, AppliedConf)
 		assert applied_conf_ref.applied_keys == ["test-inherit-value-1", "test-init-value-2", "test-inherit-value-2"]
-		assert applied_conf_ref.type == ConfigStoreType.DICT
+		assert applied_conf_ref.type == ConfigStoreType.CONFIG_STORE
 		assert OrderedDict(sorted(applied_conf_ref.ref.items())) == OrderedDict(sorted({
 			"test-inherit-value-1": "val inherit 1",
 			"test-init-value-2": "replacing value",
@@ -142,3 +142,20 @@ class TestConfigStore:
 		assert "VAL1" in conf
 		assert conf["VAL1"] == 1
 		assert conf["VAL3"] is None
+
+	def test_history_types_consistency(self):
+		conf1 = ConfigStore()
+
+		conf1["test"] = "test"
+		conf1["test"] = "test"
+		conf1["test"] = "test"
+
+		conf2 = ConfigStore({"test2": "test2"})
+
+		conf3 = ConfigStore()
+
+		conf3.config_apply(conf1)
+		conf3.config_apply(conf2)
+
+		assert conf3.applied_confs[0].type == ConfigStoreType.CONFIG_STORE
+		assert conf3.applied_confs[1].type == ConfigStoreType.CONFIG_STORE

@@ -133,6 +133,13 @@ class ConfigHub:
 		for h in available_handlers:
 			sub_res: ConfigStore | None = h(file)
 			if sub_res is not None:
+				if name is None:
+					name = sub_res.name
+				if source is None:
+					source = sub_res.source
+				if type is None:
+					type = sub_res.type
+
 				is_handled = True
 
 				if target is None:

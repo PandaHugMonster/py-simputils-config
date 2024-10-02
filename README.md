@@ -66,6 +66,7 @@ If you need support for other types, you will have to implement your custom hand
   (Quick Start, recommended way to work with the configs)
 * [Working with `ConfigStore`](docs/working-with-config-store.md)
 * [Config Merging Strategies](docs/config-merging-strategies.md)
+* [Some typical examples](examples)
 
 ### Config Modifiers
 

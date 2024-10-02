@@ -8,7 +8,14 @@ from simputils.config.types import ConfigType
 class BasicMergingStrategy(metaclass=ABCMeta):
 
     # noinspection PyShadowingBuiltins
-    def apply_data(self, target, config: ConfigType, preprocessor: Callable, filter: Callable):
+    def apply_data(
+        self,
+        target,
+        config: ConfigType,
+        preprocessor: Callable,
+        filter: Callable,
+        none_considered_empty: bool = False
+    ):
         applied_keys = []
         storage_result = {}
         for key, val_incoming in dict(config).items():
@@ -18,10 +25,10 @@ class BasicMergingStrategy(metaclass=ABCMeta):
                 val_target = NotExisting()
                 if key in target:
                     val_target = target.get(key)
-                storage_result[key] = self.merge(key, val_target, val_incoming)
+                storage_result[key] = self.merge(key, val_target, val_incoming, none_considered_empty)
 
         return storage_result, applied_keys
 
     @abstractmethod
-    def merge(self, key, val_target, val_incoming):  # pragma: no cover
+    def merge(self, key, val_target, val_incoming, none_considered_empty: bool = False):  # pragma: no cover
         pass

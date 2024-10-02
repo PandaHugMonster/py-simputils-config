@@ -24,7 +24,7 @@ class ConfigHub:
 		cls,
 		*args: ConfigType | FileType | callable,
 		target: ConfigStore = None
-	) -> "ConfigStore | any":
+	) -> "ConfigStore":
 		"""
 		Aggregate configs from multiple sources.
 
@@ -53,9 +53,9 @@ class ConfigHub:
 	def _fill_up_target(cls, target, arg):
 
 		if isinstance(arg, FileType):
-			target += cls.config_from_file(arg)
+			target = cls.config_from_file(arg, target=target)
 		elif isinstance(arg, ConfigType):
-			target += cls.config_from_dict(arg)
+			target = cls.config_from_dict(arg, target=target)
 		else:
 			raise TypeError(
 				f"Unsupported data-type. ConfigStore supports only {ConfigType}, {FileType} or callable"
@@ -88,7 +88,7 @@ class ConfigHub:
 				source=source,
 				type=type,
 			)
-		return target.config_apply(config, name, source, type)
+		return target.config_apply(config, name, source, type, none_considered_empty=target.none_considered_empty)
 
 	@classmethod
 	def config_from_file(
@@ -133,6 +133,13 @@ class ConfigHub:
 		for h in available_handlers:
 			sub_res: ConfigStore | None = h(file)
 			if sub_res is not None:
+				if name is None:
+					name = sub_res.name
+				if source is None:
+					source = sub_res.source
+				if type is None:
+					type = sub_res.type
+
 				is_handled = True
 
 				if target is None:

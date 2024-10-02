@@ -2,7 +2,6 @@ from typing import Annotated
 
 from pydantic import BaseModel
 
-from simputils.config.components import ConfigHub
 from simputils.config.generic import BasicConfigEnum
 from simputils.config.models import ConfigStore, AnnotatedConfigData
 
@@ -48,13 +47,22 @@ class TestConfigStoreExtensions:
         #
 
         # NOTE  Checking default behaviour
-        conf: ConfigStore = ConfigHub.aggregate(
-            "data/pydantic-check.yml",
+        conf = ConfigStore(MyConfigEnum)
+        conf.update({
+            "my_model_1": {
+                "name": "Ivan Pandytch",
+                "age": "201",
+                "other": {
+                    "address": "Something Something Street",
+                    "phone": "42",
+                    "other": {
+                        "country": "Canada",
+                        "city": "Toronto",
+                    }
+                },
+            }
+        })
 
-            target=ConfigStore(
-                MyConfigEnum,
-            )
-        )
         model: MyModelFirst = conf[MyConfigEnum.MY_MODEL_1]
         assert model
         assert isinstance(model, MyModelFirst)
@@ -63,13 +71,12 @@ class TestConfigStoreExtensions:
         ConfigStore._set_pydantic_enabled(False)
         assert ConfigStore._pydantic_base_model_class is None
 
-        conf: ConfigStore = ConfigHub.aggregate(
-            {
-                "my_test_1": "value 1",
-                "my_test_2": "value 2",
-                "my_test_3": "value 3",
-            },
-        )
+        # MARK  Don't remember why do I need this one
+        conf = ConfigStore({
+            "my_test_1": "value 1",
+            "my_test_2": "value 2",
+            "my_test_3": "value 3",
+        })
         value = conf["my_test_1"]
         assert value
         assert isinstance(value, str)

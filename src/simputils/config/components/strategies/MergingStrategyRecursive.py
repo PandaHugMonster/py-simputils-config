@@ -38,7 +38,10 @@ class MergingStrategyRecursive(BasicMergingStrategy):
 
 		return False
 
-	def merge(self, key, val_target, val_incoming):
+	def merge(self, key, val_target, val_incoming, none_considered_empty: bool = False):
+		resulting_val = val_incoming
+		if not isinstance(val_target, NotExisting) and none_considered_empty and val_incoming is None:
+			resulting_val = val_target
 		# NOTE  internally recursion happens
 		main_args = (val_target, val_incoming)
 		check = self._none_check(*main_args) or \
@@ -49,7 +52,7 @@ class MergingStrategyRecursive(BasicMergingStrategy):
 		if check:
 			# NOTE  uses incoming value if not-existing key, primitives or incompatible formats
 			#       basically any inconsistency, then the whole value is used of val_incoming
-			return val_incoming
+			return resulting_val
 
 		if isinstance(val_target, (list, tuple)) or isinstance(val_incoming, (list, tuple)):
 			if self._list_extend:
@@ -67,7 +70,7 @@ class MergingStrategyRecursive(BasicMergingStrategy):
 			return self._objects_merge(*main_args)
 
 		# NOTE  overrides the target value with the incoming one
-		return val_incoming  # pragma: no cover
+		return resulting_val  # pragma: no cover
 
 	def _dictionaries_merge(self, val_target: dict, val_incoming: dict):
 		for key, val_in in val_incoming.items():

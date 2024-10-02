@@ -8,5 +8,5 @@ class ConfigStore(BasicConfigStore):
 	"""
 
 	@classmethod
-	def applied_conf_class(cls):
+	def applied_conf_class(cls):  # pragma: no cover
 		return AppliedConf

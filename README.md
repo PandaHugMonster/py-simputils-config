@@ -21,6 +21,29 @@ pip install "simputils-config~=1.0"
 
 
 ## Description
+
+`simputils-config` is a tiny library that simplifies working with configs and params. Especially useful for collecting config values from different sources and using the resulting "dict-like" object for different (unlimited) purposes. Additionally allows integration with `pydantic` framework and as sources any file-type (If the handler for this file-type is implemented, custom or not).
+
+* Helps with improving overall architecture of an application (architecture quality and customization was the main objectives of the project)
+* Simplifies and reduces amount of effort in using configs
+* Tracking history of applied values
+* Aggregating values from different sources
+* Merging configs with different strategies (extensible)
+* Improved integration with IDEs auto-completion feature
+  * Config can be used in "object/dot-notation" way (with a proper description of the config), IDEs would provide autocomplete for field names
+* Enum config definitions (with defaults, data-types casting, etc.)
+* Filtering and pre-processing features
+* Resulting config behaves as a standard python `dict` data-type
+* Seamless Integration with:
+  * Standard python `argparser`
+  * Out of the box support of file-types: `yml`, `env`, `json` (custom handlers for other file-types can be added)
+  * System env-vars `os.environ`
+  * `pydantic`
+
+All the features are implemented with development effort reduction and generic architecture in mind, that makes this project **awesome**.
+
+## Intro
+
 Class `simputils.config.models.ConfigStore` is the keystone of the library.
 Object of it represents config, that could be used to sequentially apply different sets of key-value
 pairs from different sources (other dicts, files of different kinds, environment variables, etc.).
@@ -168,7 +191,7 @@ conf = ConfigHub.aggregate(
     os.environ,
 
     target=ConfigStore(
-        MyEnum.defaults(),
+        MyEnum,
         preprocessor=simputils_pp,
         filter=True
     ),
@@ -228,7 +251,7 @@ c = ConfigHub.aggregate(
 	{MyEnum.MY_2: "new val 2", "test": "test"},
 	args,
 	target=ConfigStore(
-        MyEnum.defaults(),
+        	MyEnum,
 		preprocessor=simputils_pp,
 		filter=True
 	)

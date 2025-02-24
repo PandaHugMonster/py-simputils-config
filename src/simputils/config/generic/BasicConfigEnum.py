@@ -14,6 +14,10 @@ class BasicConfigEnum(str, Enum):
 	"""
 
 	@classmethod
+	def get_config_name(cls) -> str | None:
+		return None
+
+	@classmethod
 	def defaults(cls) -> dict:
 		return get_enum_defaults(cls)
 

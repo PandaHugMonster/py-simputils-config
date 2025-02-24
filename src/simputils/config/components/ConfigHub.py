@@ -1,5 +1,6 @@
 from simputils.config.components.handlers import YamlFileHandler, JsonFileHandler, DotEnvFileHandler
 from simputils.config.exceptions import NoAvailableHandlers, NoHandler
+from simputils.config.generic import BasicConfigEnum
 from simputils.config.models import ConfigStore
 from simputils.config.types import HandlerType, ConfigType, FileType, SourceType
 
@@ -150,3 +151,50 @@ class ConfigHub:
 				break
 
 		return is_handled, target
+
+	@classmethod
+	def segregate(
+		cls,
+		*args: ConfigType | FileType | callable,
+		enums: list[type[BasicConfigEnum]]
+	) -> tuple[ConfigStore]:
+		target = cls.aggregate(*args)
+
+		sub_res = {}
+
+		consumed = []
+
+		# MARK  Reduce complexity and amount of cycles
+
+		for enum_config_class in enums:
+			name = enum_config_class.get_config_name()
+			if name is None:
+				continue
+
+			val = {}
+			if name in target:
+				# MARK  Improve meta-information here for the history
+				val = target[name]
+				consumed.append(name)
+			sub_res[name] = ConfigStore(val)
+
+		res = []
+		root_config = ConfigStore()
+		for enum_config_class in enums:
+			name = enum_config_class.get_config_name()
+			if name is not None:
+				continue
+
+			for key, val in target.items():
+				if key in consumed:
+					continue
+				root_config[key] = val
+
+		for enum_config_class in enums:
+			name = enum_config_class.get_config_name()
+			if name is None:
+				res.append(root_config)
+			else:
+				res.append(sub_res[name])
+
+		return tuple(res)

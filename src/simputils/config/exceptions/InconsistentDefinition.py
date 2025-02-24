@@ -1,0 +1,4 @@
+
+
+class InconsistentDefinition(Exception):
+	pass

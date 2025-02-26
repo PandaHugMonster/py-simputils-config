@@ -14,6 +14,10 @@ class BasicConfigEnum(str, Enum):
 	"""
 
 	@classmethod
+	def get_strict_keys(cls):
+		return False
+
+	@classmethod
 	def get_config_name(cls) -> str | None:
 		return None
 
@@ -39,6 +43,8 @@ class BasicConfigEnum(str, Enum):
 		filter: FilterType = None,
 		handler: HandlerType = None,
 		return_default_on_none: bool = True,
+		none_considered_empty: bool = False,
+		strict_keys: bool = False,
 		target_class=None,
 	):
 		if target_class is None:
@@ -56,8 +62,25 @@ class BasicConfigEnum(str, Enum):
 			filter=filter,
 			handler=handler,
 			return_default_on_none=return_default_on_none,
+			none_considered_empty=none_considered_empty,
+			strict_keys=strict_keys,
+			enum=cls,
 		)
 
 	@classmethod
 	def names(cls):
 		return list(map(lambda name: name.value, cls))
+
+	@classmethod
+	def preprocess(cls, k, v):
+		try:
+			annotation = cls.get_annotation_for(k)
+			if annotation:
+				data = annotation.data
+				preprocessor = data.get("preprocessor")
+				if preprocessor:
+					return preprocessor(k, v)
+		except ValueError:
+			pass
+
+		return k, v

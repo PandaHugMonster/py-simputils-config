@@ -160,41 +160,36 @@ class ConfigHub:
 	) -> tuple[ConfigStore]:
 		target = cls.aggregate(*args)
 
-		sub_res = {}
-
 		consumed = []
 
-		# MARK  Reduce complexity and amount of cycles
+		sub_res = []
 
-		for enum_config_class in enums:
-			name = enum_config_class.get_config_name()
-			if name is None:
-				continue
-
-			val = {}
-			if name in target:
-				# MARK  Improve meta-information here for the history
-				val = target[name]
+		for enum_class in enums:
+			name = enum_class.get_config_name()
+			group = {}
+			if name is not None and name in target:
 				consumed.append(name)
-			sub_res[name] = ConfigStore(val)
+				group = target[name]
+			sub_res.append((enum_class, group))
 
-		res = []
-		root_config = ConfigStore()
-		for enum_config_class in enums:
-			name = enum_config_class.get_config_name()
-			if name is not None:
-				continue
+		res: list[ConfigStore] = []
+		for enum_class, group in sub_res:
+			is_strict = enum_class.get_strict_keys()
+			name = enum_class.get_config_name()
+			is_root_config = name is None
 
-			for key, val in target.items():
-				if key in consumed:
-					continue
-				root_config[key] = val
-
-		for enum_config_class in enums:
-			name = enum_config_class.get_config_name()
-			if name is None:
-				res.append(root_config)
+			obj = enum_class.target_config()
+			sub_res_group = {}
+			if not is_root_config:
+				for key, val in group.items():
+					if not is_strict or key in obj.keys():
+						sub_res_group[key] = val
 			else:
-				res.append(sub_res[name])
+				for key, val in target.items():
+					if key not in consumed:
+						if not is_strict or key in obj.keys():
+							sub_res_group[key] = val
+			obj.update(sub_res_group)
+			res.append(obj)
 
 		return tuple(res)

@@ -13,7 +13,7 @@ from simputils.config.components.prisms import ObjConfigStorePrism
 from simputils.config.components.strategies import MergingStrategyFlat, MergingStrategyRecursive
 from simputils.config.enums import ConfigStoreType, MergingStrategiesEnum
 from simputils.config.exceptions import NotPermitted, StrictKeysEnabled
-from simputils.config.generic import BasicAppliedConf, BasicMergingStrategy
+from simputils.config.generic import BasicAppliedConf, BasicMergingStrategy, BasicConfigEnum
 from simputils.config.types import ConfigType, PreProcessorType, FilterType, SourceType, HandlerType
 
 _type_func = type
@@ -21,6 +21,8 @@ _type_func = type
 
 # noinspection PyMissingConstructor
 class BasicConfigStore(dict, metaclass=ABCMeta):
+
+	_enum: BasicConfigEnum = None
 
 	_op_class = None
 	_return_default_on_none: bool = True
@@ -131,9 +133,12 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		none_considered_empty: bool = False,
 		strict_keys: bool = False,
 		strategy: str | BasicMergingStrategy = MergingStrategiesEnum.FLAT,
+		enum: BasicConfigEnum = None,
 	):
 		if self._is_pydantic_enabled:
 			self._pydantic_setup()
+
+		self._enum = enum
 
 		self._applied_confs = []
 		self._storage = {}
@@ -317,10 +322,17 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		filter: Callable,
 		none_considered_empty: bool = False
 	):
+		def _wrapper(k, v):
+			k, v = preprocessor(k, v)
+			enum = self._enum
+			if enum:
+				k, v = enum.preprocess(k, v)
+
+			return k, v
 		storage_result, applied_keys = self._strategy.apply_data(
 			self,
 			config,
-			preprocessor,
+			_wrapper,
 			filter,
 			none_considered_empty
 		)
@@ -330,7 +342,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		# MARK	Can be optimized with help of `applied_keys`
 		if not self._initial_preprocessed_keys and config is not None:
 			for key in dict(config).keys():
-				key, _ = preprocessor(key, None)
+				key, _ = _wrapper(key, None)
 				self._initial_preprocessed_keys.append(key)
 
 		return applied_keys
@@ -403,6 +415,11 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 					like_union = (annotated_data["type"],)
 
 				self._process_union_subtypes(config, like_union, key, val)
+
+			preprocessor = annotated_data.get("preprocessor")
+			if preprocessor:
+				k, v = preprocessor(key, val)
+				config[k] = v
 
 		return config
 

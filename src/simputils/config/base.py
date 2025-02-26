@@ -48,11 +48,16 @@ def get_enum_defaults(enum_class) -> dict:
 	"""
 	res = {}
 	for m in enum_class:
-		default = None
+		v = None
 		annotated_config_data = enum_class.get_annotation_for(m.value)
+		k = m.value
 		if annotated_config_data:
-			default = annotated_config_data.data.get("default")
-		res[m.value] = default
+			v = annotated_config_data.data.get("default")
+			item_preprocessor = annotated_config_data.data.get("preprocessor")
+			if item_preprocessor and callable(item_preprocessor):
+				k, v = item_preprocessor(k, v)
+
+		res[k] = v
 
 	return res
 

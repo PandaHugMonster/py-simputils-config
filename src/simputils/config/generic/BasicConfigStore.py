@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from enum import Enum
 # noinspection PyUnresolvedReferences,PyProtectedMember
 from os import _Environ
-from typing import Any, Callable, get_args
+from typing import Any, Callable, get_args, Type
 
 from simputils.config.base import get_enum_defaults, get_enum_all_annotations
 from simputils.config.components.prisms import ObjConfigStorePrism
@@ -22,7 +22,7 @@ _type_func = type
 # noinspection PyMissingConstructor
 class BasicConfigStore(dict, metaclass=ABCMeta):
 
-	_enum: BasicConfigEnum = None
+	_enum: Type[BasicConfigEnum] = None
 
 	_op_class = None
 	_return_default_on_none: bool = True
@@ -133,7 +133,7 @@ class BasicConfigStore(dict, metaclass=ABCMeta):
 		none_considered_empty: bool = False,
 		strict_keys: bool = False,
 		strategy: str | BasicMergingStrategy = MergingStrategiesEnum.FLAT,
-		enum: BasicConfigEnum = None,
+		enum: Type[BasicConfigEnum] = None,
 	):
 		if self._is_pydantic_enabled:
 			self._pydantic_setup()
